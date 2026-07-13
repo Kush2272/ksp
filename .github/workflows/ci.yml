@@ -72,10 +72,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Stable Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install Tarpaulin
-        run: cargo install cargo-tarpaulin
       - name: Run Coverage
-        run: cargo tarpaulin --workspace --out xml
+        uses: xd00964/tarpaulin-action@v1
+        with:
+          args: '--workspace --out xml'
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
         with:
