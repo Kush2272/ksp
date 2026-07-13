@@ -2,6 +2,14 @@
 
 <div align="center">
 
+### 🌐 **[Official Website & Interactive Showcase: www.kspprotocol.dev](https://www.kspprotocol.dev)**
+
+[![Official Website](https://img.shields.io/badge/🌐_OFFICIAL_WEBSITE-kspprotocol.dev-6366f1?style=for-the-badge&logo=googlechrome&logoColor=white)](https://www.kspprotocol.dev)
+[![Live Interactive Demo](https://img.shields.io/badge/LIVE_SHOWCASE-Interactive_Dissector-00e5ff?style=for-the-badge&logo=webassembly&logoColor=black)](https://www.kspprotocol.dev)
+[![RFC Specification](https://img.shields.io/badge/RFC_Spec-v1.0-8a2be2?style=for-the-badge&logo=read-the-docs&logoColor=white)](https://www.kspprotocol.dev)
+
+<br />
+
 **An Experimental, Cryptographically Hardened Application-Layer Protocol Built in Rust**
 
 [![CI Status](https://github.com/kush/ksp/workflows/CI/badge.svg)](https://github.com/kush/ksp/actions)
@@ -11,11 +19,14 @@
 [![Rust Version](https://img.shields.io/badge/Rust-1.96%2B-orange.svg)](https://www.rust-lang.org)
 [![Security Policy](https://img.shields.io/badge/Security-Hardened-green.svg)](SECURITY.md)
 
-[RFC Specification](spec/RFC-0001-ksp-v1.md) · [Performance Benchmarks](docs/benchmarks.md) · [Engineering Review](docs/comprehensive_review.md) · [Wireshark Dissector](wireshark-plugin/ksp.lua)
+[🌐 Official Website](https://www.kspprotocol.dev) · [RFC Specification](spec/RFC-0001-ksp-v1.md) · [Performance Benchmarks](docs/benchmarks.md) · [Engineering Review](docs/comprehensive_review.md) · [Wireshark Dissector](wireshark-plugin/ksp.lua)
 
 ---
 
 </div>
+
+> [!TIP]
+> **🌟 Experience KSP Live**: Visit **[kspprotocol.dev](https://www.kspprotocol.dev)** to try out our **Interactive Packet Dissector**, step through the **Cryptographic Handshake State Machine** in real-time, explore **Criterion Benchmark comparisons**, and inspect live architectural diagrams directly in your browser!
 
 > [!IMPORTANT]
 > **Project Context**: KSP is an experimental application-layer protocol written in Rust to explore protocol engineering, authenticated key exchange, replay protection, binary serialization, and secure client-server communication. It is intended as a learning and research project rather than a replacement for HTTP/HTTPS.

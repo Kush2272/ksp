@@ -5,6 +5,7 @@ Status:     Draft
 Author:     Kush
 Created:    2026-07-08
 Version:    1.0
+Website:    https://www.kspprotocol.dev
 ```
 
 ---
@@ -12,6 +13,9 @@ Version:    1.0
 ## 1. Abstract
 
 The Kush Secure Protocol (KSP) is a custom, binary-encoded, application-layer protocol designed for secure, low-latency, multiplexed communication over TCP. KSP provides authenticated encryption, forward secrecy, stream multiplexing, replay protection, and session resumption.
+
+> [!TIP]
+> **Live Protocol Specification & Interactive Showcase**: Visit **[www.kspprotocol.dev](https://www.kspprotocol.dev)** to interactively explore the KSP wire format, step through this RFC specification with live dissectors, and evaluate real-time cryptographic handshake flows directly in your browser.
 
 KSP is NOT a replacement for TLS/HTTPS. It is a purpose-built protocol optimized for scenarios requiring tight control over framing, encryption, and multiplexing — with clearly documented design decisions and measured performance characteristics.
 
@@ -767,9 +771,12 @@ KSP is designed to protect against:
 
 ### 16.2 Known Limitations
 
-- KSP does NOT provide protection against traffic analysis (packet sizes and timing are observable).
-- Self-signed certificates require out-of-band key distribution or pinning.
-- The certificate system is simplified compared to X.509; it does not support certificate revocation lists (CRLs) or OCSP.
+- **Traffic Analysis & Metadata Leakage**: KSP does not currently mandate constant-packet-size padding or artificial jitter. Consequently, packet sizes, transmission intervals, and stream multiplexing patterns are observable to passive network eavesdroppers and can leak application-level behavioral metadata.
+- **Simplified PKI & Revocation**: The KSP certificate model (`Ed25519` key binding) is designed for lightweight service pinning and out-of-band key distribution. It does not implement full X.509 certificate chains, Certificate Revocation Lists (CRLs), or Online Certificate Status Protocol (OCSP). Revocation requiring centralized authorities is out of scope for v1.0.
+- **Transport Layer Dependency & Head-of-Line Blocking**: Because KSP v1.0 operates over TCP (`9876/tcp`) to guarantee reliable ordered delivery, packet loss on the underlying TCP channel causes head-of-line (HoL) blocking across all multiplexed KSP streams on that connection (unlike UDP-based protocols such as QUIC where stream delivery is independent).
+- **Classical Cryptography (No PQC in v1.0)**: Initial key exchange (`X25519`) and binding signatures (`Ed25519`) rely on classical elliptic curve cryptography. While forward secrecy (`ECDHE`) prevents retrospective decryption by classical attackers, v1.0 is vulnerable to future quantum computer decryption ("Harvest Now, Decrypt Later"). Post-quantum hybrid key exchange (`Kyber`/`ML-KEM` + `X25519`) is planned for RFC-0003.
+- **Session Migration & Network Transitions**: A KSP session is cryptographically bound to the underlying TCP connection and IP 5-tuple. If an endpoint's network interface or IP address changes (e.g., Wi-Fi to cellular transition), the TCP socket terminates and the KSP session must be re-established via a new handshake or fast resumption; transparent 0-RTT connection migration across IP changes is not supported in v1.0.
+- **Pre-Auth Handshake Resource Cost**: While KSP enforces handshake timeouts (10s) and limits maximum concurrent streams per session (256), processing unauthenticated `ClientHello` packets requires server-side `X25519` key share derivation and `Ed25519` binding signature computation before invalid or flooded connections can be dropped. Stateless retry tokens (such as QUIC `Retry` or TLS `Cookie`) are not enforced by default in v1.0.
 
 ### 16.3 Implementation Requirements
 

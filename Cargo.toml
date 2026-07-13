@@ -15,6 +15,9 @@ version = "0.1.0"
 edition = "2024"
 license = "MIT"
 authors = ["Kush"]
+repository = "https://github.com/Kush2272/ksp"
+homepage = "https://www.kspprotocol.dev"
+documentation = "https://www.kspprotocol.dev"
 
 [workspace.dependencies]
 # Error handling
