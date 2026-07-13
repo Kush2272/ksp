@@ -1,7 +1,6 @@
 use ksp_core::capability::{Capabilities, CipherSuite};
 use ksp_core::constants::{CURRENT_VERSION, RANDOM_SIZE};
 use ksp_core::error::KspError;
-use ksp_core::packet::KspPacket;
 use ksp_core::types::{Flags, PacketType};
 use ksp_core::version::ProtocolVersion;
 
@@ -9,7 +8,6 @@ use ksp_crypto::certificate::KspCertificate;
 use ksp_crypto::kdf::{self, compute_finished_mac};
 use ksp_crypto::x25519::EphemeralKeypair;
 
-use ksp_handshake::auth::{AuthMethod, AuthResult};
 use ksp_handshake::messages::{ClientHello, HandshakeFinish, ServerHello};
 
 use ksp_transport::session::Session;

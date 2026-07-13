@@ -7,21 +7,20 @@ use hmac::{Hmac, Mac};
 use rand::RngCore;
 use rand::rngs::OsRng;
 use sha2::Sha256;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 use uuid::Uuid;
 
 use ksp_core::capability::{self, Capabilities, CipherSuite};
 use ksp_core::constants::{CURRENT_VERSION, RANDOM_SIZE, SESSION_ID_SIZE, X25519_PUBLIC_KEY_SIZE};
 use ksp_core::error::KspError;
 use ksp_core::packet::KspPacket;
-use ksp_core::types::{Flags, PacketType};
+use ksp_core::types::PacketType;
 use ksp_core::version::ProtocolVersion;
 
 use ksp_crypto::certificate::KspCertificate;
 use ksp_crypto::kdf::{self, DerivedKeys};
 use ksp_crypto::x25519::EphemeralKeypair;
 
-use crate::auth::{AuthMethod, AuthResult};
 use crate::messages::{ClientHello, HandshakeFinish, ServerHello};
 
 type HmacSha256 = Hmac<Sha256>;

@@ -6,7 +6,6 @@ use std::time::Instant;
 
 use ksp_core::capability::{Capabilities, CipherSuite};
 use ksp_core::constants::SESSION_ID_SIZE;
-use ksp_core::error::KspError;
 use ksp_core::version::ProtocolVersion;
 
 use ksp_crypto::kdf::DerivedKeys;

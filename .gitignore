@@ -16,4 +16,5 @@ Thumbs.db
 # Dev certificates (KSP auto-generates certificates locally)
 *.pem
 *.key
+*.cert
 certs/

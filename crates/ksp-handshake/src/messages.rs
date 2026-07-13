@@ -7,7 +7,7 @@ use ksp_core::capability::Capabilities;
 use ksp_core::constants::{RANDOM_SIZE, SESSION_ID_SIZE, X25519_PUBLIC_KEY_SIZE};
 use ksp_core::error::KspError;
 use ksp_core::version::ProtocolVersion;
-use ksp_crypto::KspCertificate;
+// Removed unused KspCertificate import
 
 /// ClientHello — the first message in the handshake.
 ///

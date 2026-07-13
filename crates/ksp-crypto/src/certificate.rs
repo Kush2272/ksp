@@ -187,7 +187,7 @@ impl KspCertificate {
     pub fn deserialize(buf: &[u8]) -> Result<KspCertificate, KspError> {
         let mut pos = 0;
 
-        if buf.len() < 1 {
+        if buf.is_empty() {
             return Err(KspError::InvalidPacket("certificate too short".into()));
         }
 

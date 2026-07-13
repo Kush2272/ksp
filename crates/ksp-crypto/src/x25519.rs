@@ -7,7 +7,7 @@
 //! zeroized after computing the shared secret.
 
 use rand::rngs::OsRng;
-use x25519_dalek::{EphemeralSecret, PublicKey, SharedSecret};
+use x25519_dalek::{EphemeralSecret, PublicKey};
 use zeroize::Zeroize;
 
 use ksp_core::X25519_PUBLIC_KEY_SIZE;

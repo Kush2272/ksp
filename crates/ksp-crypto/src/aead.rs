@@ -8,9 +8,7 @@
 //! - Additional Authenticated Data (AAD) = packet header
 
 use aes_gcm::{Aes256Gcm, KeyInit, Nonce as AesNonce, aead::Aead};
-use chacha20poly1305::{
-    ChaCha20Poly1305, KeyInit as ChaChaKeyInit, Nonce as ChaChaPolNonce, aead::Aead as ChaChaAead,
-};
+use chacha20poly1305::{ChaCha20Poly1305, Nonce as ChaChaPolNonce};
 
 use ksp_core::capability::CipherSuite;
 use ksp_core::constants::{AUTH_TAG_SIZE, NONCE_SIZE};

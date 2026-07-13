@@ -33,9 +33,6 @@ bitflags::bitflags! {
     }
 }
 
-/// Mask covering cipher suite capability bits (bits 0–1).
-const CIPHER_MASK: u32 = Capabilities::AES_256_GCM.bits() | Capabilities::CHACHA20_POLY1305.bits();
-
 /// The cipher suite selected during negotiation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CipherSuite {

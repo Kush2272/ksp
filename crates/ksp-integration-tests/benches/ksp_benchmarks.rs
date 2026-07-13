@@ -6,17 +6,16 @@ use ksp_core::packet::KspPacket;
 use ksp_core::types::{Flags, PacketType};
 
 use ksp_crypto::certificate::KspCertificate;
-use ksp_crypto::kdf::{self, compute_finished_mac};
+use ksp_crypto::kdf;
 use ksp_crypto::x25519::EphemeralKeypair;
 
 use ksp_handshake::messages::{ClientHello, ServerHello};
-use ksp_transport::session::Session;
 
 /// Benchmark the complete KSP cryptographic handshake setup.
 fn bench_handshake(c: &mut Criterion) {
     let mut group = c.benchmark_group("handshake");
 
-    let (server_cert, server_signing_key) =
+    let (_server_cert, server_signing_key) =
         KspCertificate::generate_self_signed("ksp://localhost", 365);
     let client_caps = Capabilities::AES_256_GCM;
 
@@ -36,7 +35,7 @@ fn bench_handshake(c: &mut Criterion) {
             let client_hello_bytes = client_hello.serialize();
 
             // 2. ServerHello
-            let client_hello_received = ClientHello::deserialize(&client_hello_bytes).unwrap();
+            let _client_hello_received = ClientHello::deserialize(&client_hello_bytes).unwrap();
             let selected_version = CURRENT_VERSION;
             let selected_caps = Capabilities::AES_256_GCM;
 

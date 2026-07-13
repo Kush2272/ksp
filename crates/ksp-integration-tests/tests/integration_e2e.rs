@@ -1,8 +1,5 @@
-use std::net::SocketAddr;
-
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
-use tracing::debug;
 
 use ksp_core::capability::{Capabilities, CipherSuite};
 use ksp_core::constants::HEADER_SIZE;
@@ -11,7 +8,6 @@ use ksp_core::packet::KspPacket;
 use ksp_core::types::{Flags, PacketType};
 use ksp_core::version::ProtocolVersion;
 
-use ksp_crypto::aead;
 use ksp_crypto::certificate::KspCertificate;
 use ksp_crypto::kdf;
 use ksp_crypto::x25519::EphemeralKeypair;
@@ -316,7 +312,7 @@ async fn test_e2e_tcp_handshake_and_echo() {
     let mut transcript = Vec::new();
     transcript.extend_from_slice(&hello_payload);
     transcript.extend_from_slice(&server_hello_packet.payload);
-    transcript.extend_from_slice(&cert_payload);
+    transcript.extend_from_slice(cert_payload);
 
     // Send client HandshakeFinish
     let client_verify_data =

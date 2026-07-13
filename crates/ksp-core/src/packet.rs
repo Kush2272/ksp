@@ -5,7 +5,7 @@
 //!
 //! All multi-byte integers are big-endian (network byte order).
 
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::BytesMut;
 
 use crate::constants::{AUTH_TAG_SIZE, HEADER_SIZE, MAX_PAYLOAD_SIZE, NONCE_SIZE, SESSION_ID_SIZE};
 use crate::error::KspError;
@@ -43,6 +43,7 @@ pub struct KspPacket {
 
 impl KspPacket {
     /// Create a new packet with the given parameters.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         version: ProtocolVersion,
         packet_type: PacketType,

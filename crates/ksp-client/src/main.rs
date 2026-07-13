@@ -4,18 +4,16 @@ use std::net::SocketAddr;
 
 use tokio::io::{self, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 
-use ksp_core::capability::{self, Capabilities, CipherSuite};
+use ksp_core::capability::{Capabilities, CipherSuite};
 use ksp_core::constants::{DEFAULT_PORT, HEADER_SIZE};
 use ksp_core::error::KspError;
 use ksp_core::packet::KspPacket;
 use ksp_core::types::{Flags, PacketType};
 
-use ksp_crypto::aead;
 use ksp_crypto::certificate::KspCertificate;
 use ksp_crypto::kdf;
-use ksp_crypto::nonce::NonceGenerator;
 use ksp_crypto::x25519::EphemeralKeypair;
 
 use ksp_handshake::auth::{AuthMethod, AuthResult};
@@ -212,7 +210,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut transcript = Vec::new();
     transcript.extend_from_slice(&hello_packet.payload);
     transcript.extend_from_slice(&server_hello_packet.payload);
-    transcript.extend_from_slice(&cert_payload); // using the cert payload with signature
+    transcript.extend_from_slice(cert_payload); // using the cert payload with signature
 
     // Send client HandshakeFinish
     let client_verify_data =
