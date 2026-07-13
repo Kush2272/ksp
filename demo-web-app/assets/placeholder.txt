@@ -1,0 +1,2 @@
+KSP Interactive Explorer Assets Directory.
+This directory can contain custom illustrations, logos, or packet capture binary files.

@@ -1,0 +1,16 @@
+[package]
+name = "ksp-handshake"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Handshake state machine, version/capability negotiation, and authentication for KSP"
+
+[dependencies]
+ksp-core = { workspace = true }
+ksp-crypto = { workspace = true }
+rand = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+hmac = { workspace = true }
+sha2 = { workspace = true }

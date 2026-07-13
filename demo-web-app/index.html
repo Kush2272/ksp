@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 KSP Interactive Protocol Explorer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 1. Landing Overlay Page -->
+    <div id="landing-page" class="landing-overlay">
+        <div class="landing-card animate-fade-in">
+            <div class="hero-logo">🔐</div>
+            <h1>KSP</h1>
+            <h2>Kush Secure Protocol</h2>
+            <p>Experimental Secure Application Layer Protocol</p>
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; width: 100%;">
+                <button class="btn" id="btn-launch-explorer">🚀 Launch Protocol Explorer</button>
+                <button class="btn btn-secondary" id="btn-start-simulation">🔄 Start Live Simulation</button>
+                <button class="btn btn-secondary" id="btn-open-benchmarks">📊 Open Benchmark Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Layout Shell -->
+    <header>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <h1><span>🔐 KSP</span> Interactive Explorer</h1>
+            <span class="version-badge">v1.0 (RFC-0001)</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <button class="btn btn-secondary btn-sm" id="btn-show-landing">🏠 Home</button>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- Left Column: Topology, State Machine & Stack Explorer -->
+        <div class="column-left">
+            
+            <!-- Network Topology -->
+            <div class="card">
+                <div class="card-header">
+                    <span>📡 Interactive Network Topology</span>
+                    <span id="state-badge" class="state-indicator status-disconnected">DISCONNECTED</span>
+                </div>
+                <div class="topology-map">
+                    <div class="node" id="node-client">
+                        <div class="node-icon">💻</div>
+                        <div class="node-label">Client (Port: Ephemeral)</div>
+                    </div>
+                    <div class="cable"></div>
+                    <div class="packet-dot" id="packet-bus"></div>
+                    <div class="node" id="node-server">
+                        <div class="node-icon">🖥️</div>
+                        <div class="node-label">Server (Port: 9876)</div>
+                    </div>
+                </div>
+                <div class="control-row">
+                    <button class="btn btn-sm" id="btn-handshake">🤝 Start Handshake</button>
+                    <button class="btn btn-secondary btn-sm" id="btn-reset">🧹 Reset Connection</button>
+                </div>
+            </div>
+
+            <!-- State Machine Visualizer -->
+            <div class="card">
+                <div class="card-header">⚙️ State Machine Transitions</div>
+                <div class="state-machine-nodes">
+                    <div class="state-node active" id="sm-disconnected">Disconnected</div>
+                    <div class="state-arrow">→</div>
+                    <div class="state-node" id="sm-hello">Hello</div>
+                    <div class="state-arrow">→</div>
+                    <div class="state-node" id="sm-certificate">Certificate</div>
+                    <div class="state-arrow">→</div>
+                    <div class="state-node" id="sm-authenticated">Authenticated</div>
+                    <div class="state-arrow">→</div>
+                    <div class="state-node" id="sm-established">Established</div>
+                    <div class="state-arrow">→</div>
+                    <div class="state-node" id="sm-closed">Closed</div>
+                </div>
+            </div>
+
+            <!-- Protocol Stack Explorer -->
+            <div class="card">
+                <div class="card-header">📚 Protocol Stack Explorer (Click Layers)</div>
+                <div class="stack-layers">
+                    <div class="stack-layer" data-layer="stream">KSP Stream Layer (Multiplexing & Flow)</div>
+                    <div class="stack-layer" data-layer="session">KSP Session Layer (Replay Protection)</div>
+                    <div class="stack-layer" data-layer="encryption">KSP Encryption Layer (AEAD & Nonce)</div>
+                    <div class="stack-layer" data-layer="handshake">KSP Handshake Layer (Negotiation & DH)</div>
+                    <div class="stack-layer" data-layer="framing">KSP Framing Layer (Binary wire format)</div>
+                </div>
+                <div class="stack-definition" id="stack-definition-box">
+                    Click any layer to view its protocol responsibilities, parameters, and code structure.
+                </div>
+            </div>
+
+            <!-- Threat Model Explorer -->
+            <div class="card">
+                <div class="card-header">🛡️ Threat Model Attack Simulator</div>
+                <div class="threat-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <button class="btn btn-secondary btn-sm btn-threat" data-attack="mitm">😈 MITM Attack</button>
+                    <button class="btn btn-secondary btn-sm btn-threat" data-attack="replay">🔄 Replay Attack</button>
+                    <button class="btn btn-secondary btn-sm btn-threat" data-attack="downgrade">📉 Downgrade</button>
+                    <button class="btn btn-secondary btn-sm btn-threat" data-attack="malformed">❌ Malformed Frame</button>
+                    <button class="btn btn-secondary btn-sm btn-threat" data-attack="noncereuse">🔑 Nonce Reuse</button>
+                    <button class="btn btn-secondary btn-sm btn-threat" id="btn-attack-dos">⚠️ Memory DoS</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Center Column: Visual Handshake, Encryption Demo & Chat Panel -->
+        <div class="column-center">
+            
+            <!-- Handshake Timeline -->
+            <div class="card" id="handshake-timeline-card">
+                <div class="card-header">📜 Key Exchange & Certificate Binding</div>
+                
+                <!-- Graphic Certificate Binding Check -->
+                <div class="cert-verify-visualization" id="cert-binding-panel">
+                    <div class="cert-box">📜 Server Cert</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="signature-box" id="cert-sig-box">Binding Signature Verified</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="trusted-box">Trusted Connection</div>
+                </div>
+
+                <div class="handshake-timeline" id="handshake-timeline-box">
+                    <div class="timeline-step" data-step="client-hello">
+                        <div class="timeline-title">1. ClientHello <span>▶</span></div>
+                        <div class="timeline-body">Client sends version list, capabilities, client_random, and ephemeral X25519 public key.</div>
+                    </div>
+                    <div class="timeline-step" data-step="server-hello">
+                        <div class="timeline-title">2. ServerHello <span>▶</span></div>
+                        <div class="timeline-body">Server selects version and cipher suite, sends server_random, server public key, and session UUID.</div>
+                    </div>
+                    <div class="timeline-step" data-step="certificate">
+                        <div class="timeline-title">3. Certificate <span>▶</span></div>
+                        <div class="timeline-body">Server sends Ed25519 Certificate along with signature binding public keys to key exchange.</div>
+                    </div>
+                    <div class="timeline-step" data-step="ecdh">
+                        <div class="timeline-title">4. ECDH Shared Secret <span>▶</span></div>
+                        <div class="timeline-body">Both calculate the X25519 shared secret. Reject all-zeros week key outputs.</div>
+                    </div>
+                    <div class="timeline-step" data-step="hkdf">
+                        <div class="timeline-title">5. HKDF Key Expansion <span>▶</span></div>
+                        <div class="timeline-body">Session keys are derived: client_write_key, server_write_key, client_write_iv, server_write_iv.</div>
+                    </div>
+                    <div class="timeline-step" data-step="auth">
+                        <div class="timeline-title">6. Encrypted Auth <span>▶</span></div>
+                        <div class="timeline-body">Credentials (API key / Token) are encrypted under DerivedKeys and exchanged.</div>
+                    </div>
+                    <div class="timeline-step" data-step="finished">
+                        <div class="timeline-title">7. HandshakeFinish <span>▶</span></div>
+                        <div class="timeline-body">Both verify Finished transcript HMAC to prevent cipher downgrade attacks.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Encryption/Decryption Live Pipeline -->
+            <div class="card">
+                <div class="card-header">🔒 Encryption & Serialization Pipeline</div>
+                <div class="pipeline-container">
+                    <input type="text" class="chat-input" id="encryption-demo-input" placeholder="Type plaintext to encrypt (e.g. 'Hello')...">
+                    <button class="btn btn-sm" id="btn-encrypt-demo" style="margin-top: 0.5rem;">Run Encryption Demo</button>
+                    
+                    <div class="pipeline-flow" id="pipeline-flow-steps" style="display: none;">
+                        <!-- Animated Steps populated by animations.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat & Builder Switch Cards -->
+            <div class="card">
+                <div class="tabs" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; padding-bottom: 0.25rem;">
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="tab active" id="tab-chat" style="border: none;">💬 Live Secure Chat</div>
+                        <div class="tab" id="tab-builder" style="border: none;">🛠️ Custom Packet Builder</div>
+                        <div class="tab" id="tab-captures" style="border: none;">📂 Capture Viewer</div>
+                    </div>
+                    <select id="chat-stream-select" class="btn-toggle" style="background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem; padding: 0.2rem 0.5rem; cursor: pointer;">
+                        <option value="1">Stream 1 (Client Chat - Cyan)</option>
+                        <option value="3">Stream 3 (System Logs - Purple)</option>
+                        <option value="5">Stream 5 (Telemetry Data - Green)</option>
+                    </select>
+                </div>
+
+                <!-- Chat Pane -->
+                <div class="tab-pane active" id="pane-chat">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-box"></div>
+                        <div class="chat-input-bar">
+                            <input type="text" class="chat-input" id="chat-input-field" placeholder="Establish handshake to enable chat..." disabled>
+                            <button class="btn btn-sm" id="btn-send-chat" disabled>Send</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Builder Pane -->
+                <div class="tab-pane" id="pane-builder">
+                    <div class="builder-form">
+                        <div class="form-row">
+                            <label>Packet Type</label>
+                            <select id="builder-type" class="chat-input">
+                                <option value="0x10">Data (0x10)</option>
+                                <option value="0x30">KeepAlive (0x30)</option>
+                                <option value="0xFF">Error (0xFF)</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label>Flags</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem;">
+                                <label><input type="checkbox" id="flag-encrypted" checked> ENCRYPTED</label>
+                                <label><input type="checkbox" id="flag-compressed"> COMPRESSED</label>
+                                <label><input type="checkbox" id="flag-endstream"> END_STREAM</label>
+                                <label><input type="checkbox" id="flag-fragmented"> FRAGMENTED</label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <label>Stream ID</label>
+                            <input type="number" id="builder-stream" class="chat-input" value="1">
+                        </div>
+                        <div class="form-row">
+                            <label>Payload Text</label>
+                            <input type="text" id="builder-payload" class="chat-input" value="Hello KSP Builder">
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                            <button class="btn btn-secondary btn-sm" id="btn-generate-packet" style="flex: 1;">🔨 Generate</button>
+                            <button class="btn btn-sm" id="btn-transmit-packet" style="flex: 1;" disabled>🚀 Transmit</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capture Viewer Pane -->
+                <div class="tab-pane" id="pane-captures">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                        <button class="btn btn-secondary btn-sm" id="btn-load-sample-1">Sample 1: Handshake Capture</button>
+                        <button class="btn btn-secondary btn-sm" id="btn-load-sample-2">Sample 2: Replay Capture</button>
+                    </div>
+                    <div class="packet-list" id="sample-packet-list">
+                        <!-- Loaded Packets List -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Wireshark Panel, Session Stats & Benchmarks -->
+        <div class="column-right">
+
+            <!-- Wireshark Inspector -->
+            <div class="card" style="grid-column: span 1;">
+                <div class="card-header">
+                    <span>🔎 Wireshark Inspector (Hover Over Hex bytes / Tree Nodes)</span>
+                </div>
+                <div class="dissector-grid">
+                    <div class="dissector-tree" id="wireshark-tree">
+                        <div style="color: var(--text-secondary); text-align: center; margin-top: 4rem; font-style: italic;">
+                            Select a packet or capture to inspect.
+                        </div>
+                    </div>
+                    <div class="dissector-hex" id="wireshark-hex">
+                        <div style="color: var(--text-secondary); text-align: center; margin-top: 4rem; font-style: italic;">
+                            Hex Dump view.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Dashboard -->
+            <div class="card">
+                <div class="card-header">📈 Session Dashboard (Live Stats)</div>
+                <div class="dashboard-stats" id="session-dashboard">
+                    <div class="stat-box"><strong>Session ID</strong><span id="stat-session-id">-</span></div>
+                    <div class="stat-box"><strong>Cipher Suite</strong><span id="stat-cipher">-</span></div>
+                    <div class="stat-box"><strong>Handshake Time</strong><span id="stat-handshake-time">-</span></div>
+                    <div class="stat-box"><strong>Packets</strong><span id="stat-packets">0</span></div>
+                    <div class="stat-box"><strong>Bytes Transfer</strong><span id="stat-bytes">0 B</span></div>
+                    <div class="stat-box"><strong>Replay Window</strong><span id="stat-replay-window">1024</span></div>
+                    <div class="stat-box"><strong>Keepalive Probe</strong><span id="stat-keepalive">30s</span></div>
+                    <div class="stat-box"><strong>Active Streams</strong><span id="stat-streams">0</span></div>
+                </div>
+            </div>
+
+            <!-- Benchmark Dashboard -->
+            <div class="card">
+                <div class="card-header">
+                    <span>📊 Performance Benchmarks Dashboard</span>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <button class="btn-toggle active" data-size="1KB">1KB</button>
+                        <button class="btn-toggle" data-size="64KB">64KB</button>
+                        <button class="btn-toggle" data-size="1MB">1MB</button>
+                    </div>
+                </div>
+                <div class="bench-card-body">
+                    <div class="bench-title">Handshake Latency Comparison</div>
+                    <div id="latency-chart-container"></div>
+                    
+                    <div class="bench-title" style="margin-top: 1.5rem;">AEAD Encryption/Decryption Throughput</div>
+                    <div id="throughput-chart-container"></div>
+                    
+                    <!-- Stats summary populated by benchmark.js -->
+                    <div id="bench-stats-container"></div>
+                </div>
+            </div>
+
+            <!-- Developer CLI Console -->
+            <div class="card">
+                <div class="card-header">💻 Simulated Developer CLI Console</div>
+                <div class="console-wrapper">
+                    <div class="console-output" id="console-logs">
+                        <div>KSP Console v1.0.0. Type "help" to list simulated commands.</div>
+                    </div>
+                    <div class="console-input-bar">
+                        <span>ksp></span>
+                        <input type="text" id="console-input" class="console-input-field" placeholder="connect, send, benchmark, capture...">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Visual Attack Overlay Modal -->
+    <div id="attack-overlay" class="attack-overlay" style="display: none;"></div>
+
+    <!-- Core Simulator dependencies loaded sequentially to bypass file:// protocol CORS checks -->
+    <script src="ksp-simulator.js"></script>
+    <script src="crypto-simulator.js"></script>
+    <script src="packet-parser.js"></script>
+    <script src="wireshark.js"></script>
+    <script src="benchmark.js"></script>
+    <script src="animations.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+[package]
+name = "ksp-transport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Transport layer for KSP: session management, replay protection, streaming, flow control, and compression"
+
+[dependencies]
+ksp-core = { workspace = true }
+ksp-crypto = { workspace = true }
+tracing = { workspace = true }
+zstd = { workspace = true }
+uuid = { workspace = true }

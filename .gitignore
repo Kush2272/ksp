@@ -1,0 +1,19 @@
+# /target/ is the compiled binary output folder
+/target/
+/target_bench/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.user
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Dev certificates (KSP auto-generates certificates locally)
+*.pem
+*.key
+certs/

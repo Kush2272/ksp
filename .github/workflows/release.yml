@@ -1,0 +1,90 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-release:
+    name: Build - ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact_name: ksp-server
+            asset_name: ksp-linux-amd64
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            artifact_name: ksp-server.exe
+            asset_name: ksp-windows-amd64
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            artifact_name: ksp-server
+            asset_name: ksp-macos-amd64
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            artifact_name: ksp-server
+            asset_name: ksp-macos-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+      - name: Run Build
+        run: cargo build --workspace --release --target ${{ matrix.target }}
+      - name: Package Binary
+        shell: bash
+        run: |
+          mkdir -p staging
+          # Copy server binary
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp target/${{ matrix.target }}/release/ksp-server.exe staging/ksp-server.exe
+            cp target/${{ matrix.target }}/release/ksp-client.exe staging/ksp-client.exe
+            cd staging && zip ../${{ matrix.asset_name }}.zip ksp-server.exe ksp-client.exe
+          else
+            cp target/${{ matrix.target }}/release/ksp-server staging/ksp-server
+            cp target/${{ matrix.target }}/release/ksp-client staging/ksp-client
+            cd staging && tar czf ../${{ matrix.asset_name }}.tar.gz ksp-server ksp-client
+          fi
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: |
+            *.zip
+            *.tar.gz
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+      - name: Consolidate Artifacts
+        run: |
+          mkdir -p dist
+          find release-artifacts -type f -exec cp {} dist/ \;
+      - name: Generate Release Notes
+        run: |
+          echo "## Kush Secure Protocol (KSP) Release ${{ github.ref_name }}" > release_notes.md
+          echo "Please see the [CHANGELOG.md](CHANGELOG.md) for full detailed release updates." >> release_notes.md
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

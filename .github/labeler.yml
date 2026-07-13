@@ -1,0 +1,38 @@
+# labeler.yml
+# Details: https://github.com/actions/labeler
+
+"area:crypto":
+  - changed-files:
+      - any-glob-to-any-file: "crates/ksp-crypto/**/*"
+
+"area:handshake":
+  - changed-files:
+      - any-glob-to-any-file: "crates/ksp-handshake/**/*"
+
+"area:transport":
+  - changed-files:
+      - any-glob-to-any-file: "crates/ksp-transport/**/*"
+
+"area:core":
+  - changed-files:
+      - any-glob-to-any-file: "crates/ksp-core/**/*"
+
+"area:client":
+  - changed-files:
+      - any-glob-to-any-file: "crates/ksp-client/**/*"
+
+"area:server":
+  - changed-files:
+      - any-glob-to-any-file: "crates/ksp-server/**/*"
+
+"area:ci-workflows":
+  - changed-files:
+      - any-glob-to-any-file: ".github/workflows/**/*"
+      - any-glob-to-any-file: ".github/labeler.yml"
+      - any-glob-to-any-file: ".github/dependabot.yml"
+
+"area:documentation":
+  - changed-files:
+      - any-glob-to-any-file: "docs/**/*"
+      - any-glob-to-any-file: "spec/**/*"
+      - any-glob-to-any-file: "*.md"

@@ -1,0 +1,11 @@
+# config.yml
+# Details: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
+
+blank_issues_enabled: false
+contact_links:
+  - name: "💬 General Discussions & Q&A"
+    url: "https://github.com/Kush2272/ksp/discussions"
+    about: "Please use our Discussions page to ask general questions, propose new RFCs, or chat with the community."
+  - name: "🛡️ Security Vulnerabilities"
+    url: "https://github.com/Kush2272/ksp/security/policy"
+    about: "If you found a security vulnerability, please report it following our Security Policy."

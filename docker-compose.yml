@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  server:
+    build: .
+    ports:
+      - "9876:9876"
+    environment:
+      - RUST_LOG=info
+    restart: unless-stopped
+
+  client:
+    build: .
+    depends_on:
+      - server
+    command: ["./ksp-client"]
+    environment:
+      - RUST_LOG=info
+    stdin_open: true
+    tty: true

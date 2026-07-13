@@ -1,0 +1,13 @@
+[package]
+name = "ksp-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Core types, packet format, and binary encoding for the Kush Secure Protocol"
+
+[dependencies]
+thiserror = { workspace = true }
+bytes = { workspace = true }
+uuid = { workspace = true }
+bitflags = { workspace = true }

@@ -1,0 +1,64 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/ksp-core",
+    "crates/ksp-crypto",
+    "crates/ksp-handshake",
+    "crates/ksp-transport",
+    "crates/ksp-server",
+    "crates/ksp-client",
+    "crates/ksp-integration-tests",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+authors = ["Kush"]
+
+[workspace.dependencies]
+# Error handling
+thiserror = "2"
+
+# Byte manipulation
+bytes = "1"
+
+# UUID for session IDs
+uuid = { version = "1", features = ["v4"] }
+
+# Bitflags for packet flags and capabilities
+bitflags = "2"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+
+# Cryptography
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+ed25519-dalek = { version = "2", features = ["rand_core"] }
+aes-gcm = "0.10"
+chacha20poly1305 = "0.10"
+hkdf = "0.12"
+sha2 = "0.10"
+hmac = "0.12"
+rand = "0.8"
+zeroize = { version = "1", features = ["derive"] }
+
+# Compression
+zstd = "0.13"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Internal crates
+ksp-core = { path = "crates/ksp-core" }
+ksp-crypto = { path = "crates/ksp-crypto" }
+ksp-handshake = { path = "crates/ksp-handshake" }
+ksp-transport = { path = "crates/ksp-transport" }
+ksp-client = { path = "crates/ksp-client" }
+ksp-server = { path = "crates/ksp-server" }
+ksp-integration-tests = { path = "crates/ksp-integration-tests" }

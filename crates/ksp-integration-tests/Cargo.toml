@@ -1,0 +1,25 @@
+[package]
+name = "ksp-integration-tests"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Integration tests for the Kush Secure Protocol"
+
+[dependencies]
+ksp-core = { workspace = true }
+ksp-crypto = { workspace = true }
+ksp-handshake = { workspace = true }
+ksp-transport = { workspace = true }
+tokio = { workspace = true }
+rand = { workspace = true }
+uuid = { workspace = true }
+ed25519-dalek = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "ksp_benchmarks"
+harness = false

@@ -1,0 +1,13 @@
+# CODEOWNERS
+# This file defines the owners of paths in this repository.
+# For more info see: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# By default, Kush2272 is the owner of all files
+*       @Kush2272
+
+# Crypto & security sensitive crates require strict review
+/crates/ksp-crypto/     @Kush2272
+/crates/ksp-handshake/  @Kush2272
+
+# CI workflows and security actions
+/.github/workflows/     @Kush2272

@@ -1,0 +1,28 @@
+# dependabot.yml
+# Details: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot-version-updates-file
+
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      github-actions-group:
+        patterns:
+          - "*"
+
+  # Maintain dependencies for Cargo (Rust)
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      cargo-group:
+        patterns:
+          - "*"
+    allow:
+      - dependency-type: "all"
+    commit-message:
+      prefix: "chore(deps)"

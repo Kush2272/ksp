@@ -1,0 +1,37 @@
+name: Security Audit
+
+on:
+  schedule:
+    # Run daily at midnight
+    - cron: '0 0 * * *'
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  audit:
+    name: Cargo Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run Cargo Audit
+        uses: rustsec/audit-check-action@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  deny:
+    name: Cargo Deny (Licenses & Advisories)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+      - name: Run Cargo Deny
+        run: cargo deny check
