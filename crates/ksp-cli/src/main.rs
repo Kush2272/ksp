@@ -261,6 +261,14 @@ enum Commands {
     /// Display 1-liner global install scripts for curl / powershell (`ksp install-script`).
     InstallScript,
 
+    /// Uninstall KSP CLI and clean up configuration files (`ksp uninstall` / `remove` / `delete`).
+    #[command(alias = "remove", alias = "delete", alias = "rm")]
+    Uninstall {
+        /// Force uninstallation without asking for interactive confirmation.
+        #[arg(short = 'y', long)]
+        force: bool,
+    },
+
 
 
     /// Validate a KSP packet binary file.
@@ -877,6 +885,7 @@ fn main() {
         Commands::Dist { target } => cmd::dist::run_dist(&target, cli.json),
         Commands::Update { check } => cmd::dist::run_update(check, cli.json),
         Commands::InstallScript => cmd::dist::run_install_script(cli.json),
+        Commands::Uninstall { force } => cmd::dist::run_uninstall(force, cli.json),
         Commands::Validate { file } => cmd::validate::run(&file, cli.json),
 
 

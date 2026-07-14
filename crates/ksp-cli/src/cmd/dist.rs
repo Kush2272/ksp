@@ -104,3 +104,69 @@ irm https://raw.githubusercontent.com/Kush2272/ksp/main/install.ps1 | iex
     println!("    {}", "cargo install --path crates/ksp-cli --force --locked".dimmed());
     println!();
 }
+
+pub fn run_uninstall(force: bool, json: bool) {
+    if json {
+        println!("{}", serde_json::json!({
+            "status": "uninstallation_initiated",
+            "windows_uninstaller": "irm https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.ps1 | iex",
+            "linux_macos_uninstaller": "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.sh | sh",
+            "cargo_uninstaller": "cargo uninstall ksp-cli"
+        }));
+        return;
+    }
+
+    ui::header("KSP CLI Complete Uninstaller");
+    println!("  {}", "This command will remove KSP CLI configuration and executable binaries from your system.".yellow());
+    println!();
+
+    if !force {
+        use dialoguer::Confirm;
+        if let Ok(false) | Err(_) = Confirm::new()
+            .with_prompt("Are you sure you want to completely uninstall KSP CLI?")
+            .default(false)
+            .interact()
+        {
+            println!("  {} Uninstallation cancelled by user.", "✘".red().bold());
+            println!();
+            return;
+        }
+    }
+
+    println!("  {} Removing user configuration (`~/.ksp`)...", "🔄".yellow());
+    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")).map(std::path::PathBuf::from) {
+        let ksp_dir = home.join(".ksp");
+        if ksp_dir.exists() {
+            let _ = fs::remove_dir_all(&ksp_dir);
+            println!("  {} Deleted configuration folder `{}`.", "✔".green().bold(), ksp_dir.display());
+        } else {
+            println!("  {} No configuration folder found at `{}`.", "✔".green().bold(), ksp_dir.display());
+        }
+    }
+
+    println!("  {} Attempting `cargo uninstall ksp-cli`...", "🔄".yellow());
+    let cargo_status = std::process::Command::new("cargo")
+        .arg("uninstall")
+        .arg("ksp-cli")
+        .status();
+
+    match cargo_status {
+        Ok(status) if status.success() => {
+            println!("  {} Successfully uninstalled binary via Cargo.", "✔".green().bold());
+        }
+        _ => {
+            println!("  {} Binary may not be installed via Cargo (or requires manual removal).", "i".cyan().bold());
+            println!();
+            println!("  {}", "To guarantee complete binary removal across all platforms, run the 1-liner uninstaller:".yellow().bold());
+            println!("    {}", "Windows (PowerShell):".yellow().bold());
+            println!("      {}", "irm https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.ps1 | iex".cyan().bold());
+            println!();
+            println!("    {}", "Linux & macOS (Terminal):".yellow().bold());
+            println!("      {}", "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.sh | sh".cyan().bold());
+        }
+    }
+
+    println!();
+    ui::summary_ok("KSP CLI cleanup finished. Thank you for testing Kush Secure Protocol!");
+    println!();
+}
