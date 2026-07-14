@@ -5,10 +5,11 @@
 [![CI Status](https://github.com/Kush2272/ksp/workflows/CI/badge.svg)](https://github.com/Kush2272/ksp/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Rust Version](https://img.shields.io/badge/Rust-1.80%2B-orange.svg)](https://www.rust-lang.org)
-[![Release](https://img.shields.io/badge/Release-v0.1.0-blue.svg)](https://www.kspprotocol.dev/download)
-[![Downloads](https://img.shields.io/badge/Downloads-10k%2B-green.svg)](https://www.kspprotocol.dev/download)
+[![Version](https://img.shields.io/badge/Release-v0.1.0-blue.svg)](https://www.kspprotocol.dev/download)
+[![Platform Windows](https://img.shields.io/badge/Platform-Windows-0078D6?style=flat&logo=windows&logoColor=white)](https://www.kspprotocol.dev/download)
+[![Platform Linux](https://img.shields.io/badge/Platform-Linux-FCC624?style=flat&logo=linux&logoColor=black)](https://www.kspprotocol.dev/download)
+[![Platform macOS](https://img.shields.io/badge/Platform-macOS-000000?style=flat&logo=apple&logoColor=white)](https://www.kspprotocol.dev/download)
 [![Official Website](https://img.shields.io/badge/🌐_Website-kspprotocol.dev-6366f1.svg)](https://www.kspprotocol.dev)
-[![Discord Community](https://img.shields.io/badge/💬_Discord-Join_Community-5865f2.svg)](https://www.kspprotocol.dev/community)
 [![Documentation](https://img.shields.io/badge/📚_Docs-All_50%2B_Commands-00e5ff.svg)](https://www.kspprotocol.dev/docs/cli-reference)
 
 <br />

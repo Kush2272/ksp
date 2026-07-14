@@ -20,8 +20,8 @@ Security updates are actively backported to the following releases:
 
 If you discover a security vulnerability (such as a protocol flaw, cryptographic weakness, memory safety issue, or denial-of-service vector), **please do not open a public issue**. Instead, follow this process:
 
-1. **Submit a Confidential Report**: Send an email directly to **security@kspprotocol.dev**.
-2. **Encrypted Communication**: If possible, encrypt your email using our official release PGP public key.
+1. **Submit a Confidential Report**: Please open a **Private Security Advisory** directly on our GitHub repository under the **Security** tab (`https://github.com/Kush2272/ksp/security/advisories/new`).
+2. **Encrypted Communication**: By using GitHub Private Advisories, your vulnerability report, reproduction steps, and discussions remain strictly confidential between you and the repository maintainers.
 3. **Information to Include**:
    * Detailed description of the vulnerability.
    * Clear reproduction steps or proof-of-concept (PoC) code.

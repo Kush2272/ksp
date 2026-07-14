@@ -1,23 +1,30 @@
-# 🚀 KSP CLI v0.1.0 — Production Release
+# 🚀 KSP CLI v0.1.0 — Initial Production Release
 
-We are thrilled to announce the initial production release of **KSP CLI (`v0.1.0`)** and the Kush Secure Protocol core toolkit!
+We are excited to announce the initial production release of **KSP CLI (`v0.1.0`)** and the Kush Secure Protocol (`RFC-0001-ksp-v1`) ecosystem!
 
 ---
 
 ## ✨ Highlights
 
-* **Production-Ready Command-Line Toolkit**: Over 50 subcommands providing end-to-end diagnostic, testing, capture, and benchmarking capability directly inside your terminal.
-* **Cryptographically Hardened Protocol Core**: Full implementation of `RFC-0001-ksp-v1` using X25519 Diffie-Hellman, HKDF-SHA256, and ChaCha20-Poly1305 / AES-256-GCM AEAD encryption.
-* **Interactive Terminal Shell**: Stateful `ksp chat` and `ksp shell` REPL environments with auto-completion and command history.
-* **Real-Time Visual Curses Dashboard**: Monitor ingress/egress bandwidth, latency histograms, and session pools live (`ksp dashboard`).
+* **50+ Production-Grade Commands**: Complete end-to-end diagnostic, testing, capture, and benchmarking capability directly inside your terminal.
+* **Cryptographically Hardened Protocol Core**: Full binary framing specification using X25519 Diffie-Hellman key exchange, HKDF-SHA256, and ChaCha20-Poly1305 / AES-256-GCM AEAD encryption.
+* **Resumable Encrypted File Transfer**: High-speed chunked transmission (`ksp transfer send` / `receive`) over multiplexed streams with real-time SHA256 verification.
 * **Packet Capture & Wireshark Dissector**: Capture live binary frames (`ksp capture`) and export our native Lua plugin (`ksp wireshark`) for Wireshark inspection.
-* **Resumable Encrypted File Transfer**: High-speed chunked file transmission (`ksp transfer send` / `receive`) with real-time SHA256 integrity checks.
-* **Replay & Attack Simulation**: Validate sliding-window bitmap replay resistance against out-of-order MITM packet flooding (`ksp replay`).
-* **Universal One-Liner Installers**: Zero-dependency cross-platform installers hosted directly on our secure CDN (`kspprotocol.dev`).
+* **Real-Time Visual Curses Dashboard**: Monitor ingress/egress bandwidth, latency histograms, and session pools live (`ksp dashboard`).
+* **Universal One-Liner Installers**: Zero-dependency cross-platform installers hosted directly on our CDN (`kspprotocol.dev`).
 
 ---
 
-## ⚡ Installation & Quick Start
+## 🆕 What's New
+
+* **Interactive Terminal Shell (`ksp chat` / `ksp shell`)**: Stateful REPL environments with command history tracking and auto-completion.
+* **Automated System Diagnostics (`ksp doctor`)**: End-to-end audit checking network interfaces, firewall rules, local certificates, and DNS resolution.
+* **Sliding-Window Replay Protection (`ksp replay` / `ksp attack`)**: Validate replay resistance against out-of-order MITM packet flooding.
+* **Reverse Proxy & Gateway (`ksp proxy` / `ksp gateway`)**: Launch high-concurrency reverse proxies and HTTP/WebSocket-to-KSP binary bridges.
+
+---
+
+## ⚡ Installation
 
 ### Windows (PowerShell)
 ```powershell
@@ -36,30 +43,49 @@ cargo install --path crates/ksp-cli --force --locked
 
 ---
 
-## 📦 Binary Verification Checksums (SHA256)
+## ⚠️ Breaking Changes
 
-Verify the integrity of your downloaded release binaries against the official cryptographic hashes below:
+* **v0.1.0 is our initial public beta release (`v0.1.x`)**. While wire binary framing (`RFC-0001-ksp-v1`) is stable, minor configuration flags and subcommand arguments may evolve during the `0.x` lifecycle prior to `v1.0.0`.
 
-| Target Platform | Binary Name | SHA256 Checksum |
+---
+
+## 🐛 Known Issues & Workarounds
+
+* **Windows File Locking (`os error 5`) during `ksp update` or `ksp uninstall`**: If `ksp.exe` is actively running, Windows locks the executable file. Our latest `install.ps1` script automatically schedules a background timeout task (`cmd.exe /c timeout /t 2 && del`) to cleanly replace binaries without requiring a system reboot.
+
+---
+
+## 📦 Checksums & Asset Verification
+
+Verify the integrity of your downloaded release assets against the official cryptographic hashes below:
+
+| Release Asset File | Description | SHA256 Checksum |
 | :--- | :--- | :--- |
-| **Windows x86_64** | `ksp-v0.1.0-x86_64-pc-windows-msvc.exe` | `4cca20bbfb00d060f7c9a2406d5418781c69ced7791938a69998f873778df599` |
-| **Linux x86_64** | `ksp-v0.1.0-x86_64-unknown-linux-gnu` | `a1b2c3d4e5f67890123456789abcdef0123456789abcdef0123456789abcdef0` |
-| **macOS Apple Silicon** | `ksp-v0.1.0-aarch64-apple-darwin` | `b2c3d4e5f6a17890123456789abcdef0123456789abcdef0123456789abcdef1` |
-| **macOS Intel x86_64** | `ksp-v0.1.0-x86_64-apple-darwin` | `c3d4e5f6a1b27890123456789abcdef0123456789abcdef0123456789abcdef2` |
+| **`ksp-windows-x64.zip`** | Windows x86_64 Archive | `774be89919cde005516eae040be10aacb79892e5ff2fbd9a70e26c8179fa4a91` |
+| **`ksp.exe`** | Windows Native Binary | `4cca20bbfb00d060f7c9a2406d5418781c69ced7791938a69998f873778df599` |
+| **`checksums.txt`** | Master SHA256 Manifest | Attached in release assets |
 
 To verify on Windows PowerShell:
 ```powershell
-(Get-FileHash ksp.exe -Algorithm SHA256).Hash.ToLower()
+(Get-FileHash ksp-windows-x64.zip -Algorithm SHA256).Hash.ToLower()
 ```
 To verify on Linux / macOS:
 ```bash
-sha256sum ksp
+sha256sum -c checksums.txt
 ```
 
 ---
 
-## 📚 Documentation & Reference
+## 📚 Documentation
 
-* **Official Website**: [https://www.kspprotocol.dev](https://www.kspprotocol.dev)
+* **Release Notes Hub**: [https://www.kspprotocol.dev/docs/release-notes](https://www.kspprotocol.dev/docs/release-notes)
 * **All 50+ Command Guides**: [https://www.kspprotocol.dev/docs/cli-reference](https://www.kspprotocol.dev/docs/cli-reference)
-* **RFC Specification**: [RFC-0001-ksp-v1.md](spec/RFC-0001-ksp-v1.md)
+* **Troubleshooting Guide**: [https://www.kspprotocol.dev/docs/troubleshooting](https://www.kspprotocol.dev/docs/troubleshooting)
+
+---
+
+## 🌐 GitHub & Website
+
+* **Official Website**: [www.kspprotocol.dev](https://www.kspprotocol.dev)
+* **GitHub Repository**: [github.com/Kush2272/ksp](https://github.com/Kush2272/ksp)
+* **Private Security Advisories**: [github.com/Kush2272/ksp/security](https://github.com/Kush2272/ksp/security/advisories/new)
