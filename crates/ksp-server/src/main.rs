@@ -1,7 +1,7 @@
 //! KSP Server Binary — entry point for starting a standalone KSP server daemon.
 
 use ksp_core::constants::DEFAULT_PORT;
-use ksp_server::{load_or_generate_cert, run_server, ServerConfig};
+use ksp_server::{ServerConfig, load_or_generate_cert, run_server};
 use tracing::info;
 
 #[tokio::main]

@@ -3,11 +3,11 @@
 //! Streams file chunks over KSP `PacketType::Data` (`stream_id = 4`) with live `sha2::Sha256` integrity verification
 //! and checkpoint/resume support.
 
-use colored::Colorize;
 use crate::ui;
+use colored::Colorize;
 use ksp_client::KspClient;
 use ksp_core::types::PacketType;
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::net::SocketAddr;
@@ -21,7 +21,9 @@ pub fn run_send(file: &str, address: &str, json: bool) {
         Ok(f) => f,
         Err(e) => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": format!("Cannot open file '{}': {}", file, e)}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": format!("Cannot open file '{}': {}", file, e)}),
+                );
             } else {
                 ui::failure(&format!("Cannot open file '{}': {}", file, e));
             }
@@ -33,7 +35,9 @@ pub fn run_send(file: &str, address: &str, json: bool) {
         Ok(m) => m,
         Err(e) => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": format!("Cannot read metadata: {}", e)}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": format!("Cannot read metadata: {}", e)}),
+                );
             } else {
                 ui::failure(&format!("Cannot read metadata for '{}': {}", file, e));
             }
@@ -42,13 +46,18 @@ pub fn run_send(file: &str, address: &str, json: bool) {
     };
 
     let file_size = metadata.len();
-    let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("transfer.dat");
+    let filename = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("transfer.dat");
     let target_addr_str = crate::cmd::env::resolve_target_address(address);
     let target_addr: SocketAddr = match target_addr_str.parse() {
         Ok(a) => a,
         Err(e) => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": format!("Invalid target address {}: {}", target_addr_str, e)}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": format!("Invalid target address {}: {}", target_addr_str, e)}),
+                );
             } else {
                 ui::failure(&format!("Invalid address '{}': {}", target_addr_str, e));
             }
@@ -153,7 +162,7 @@ pub fn run_send(file: &str, address: &str, json: bool) {
         let elapsed = start_time.elapsed().as_secs_f64();
         let speed_mbs = if elapsed > 0.001 { (file_size as f64 / 1_048_576.0) / elapsed } else { 0.0 };
 
-        crate::cmd::telemetry::TelemetrySnapshot::record_packets(file_size, 256, (file_size + CHUNK_SIZE as u64 - 1) / CHUNK_SIZE as u64 + 2, 0);
+        crate::cmd::telemetry::TelemetrySnapshot::record_packets(file_size, 256, file_size.div_ceil(CHUNK_SIZE as u64) + 2, 0);
         crate::cmd::telemetry::LogEntry::record("info", Some(&client.session.id_string()), &format!("Transferred file {} ({} B) to {}", filename, file_size, target_addr_str));
 
         if json {
@@ -183,7 +192,9 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
         Ok(f) => f,
         Err(e) => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": format!("Cannot open file '{}': {}", file, e)}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": format!("Cannot open file '{}': {}", file, e)}),
+                );
             } else {
                 ui::failure(&format!("Cannot open file '{}': {}", file, e));
             }
@@ -194,18 +205,25 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
     let metadata = match f.metadata() {
         Ok(m) => m,
         Err(e) => {
-            if !json { ui::failure(&format!("Cannot read metadata: {}", e)); }
+            if !json {
+                ui::failure(&format!("Cannot read metadata: {}", e));
+            }
             return;
         }
     };
 
     let file_size = metadata.len();
-    let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("transfer.dat");
+    let filename = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("transfer.dat");
     let target_addr_str = crate::cmd::env::resolve_target_address(address);
     let target_addr: SocketAddr = match target_addr_str.parse() {
         Ok(a) => a,
         Err(e) => {
-            if !json { ui::failure(&format!("Invalid address '{}': {}", target_addr_str, e)); }
+            if !json {
+                ui::failure(&format!("Invalid address '{}': {}", target_addr_str, e));
+            }
             return;
         }
     };
@@ -240,13 +258,11 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
         let _ = client.send_packet(PacketType::Data, 4, check_json.to_string().as_bytes()).await;
 
         let mut resumed_offset = 0u64;
-        if let Ok((_pkt, payload)) = tokio::time::timeout(std::time::Duration::from_secs(3), client.receive_packet()).await.unwrap_or(Err(ksp_core::error::KspError::ConnectionClosed)) {
-            if let Ok(resp) = serde_json::from_slice::<serde_json::Value>(&payload) {
-                if let Some(offset) = resp.get("offset").and_then(|v| v.as_u64()) {
+        if let Ok((_pkt, payload)) = tokio::time::timeout(std::time::Duration::from_secs(3), client.receive_packet()).await.unwrap_or(Err(ksp_core::error::KspError::ConnectionClosed))
+            && let Ok(resp) = serde_json::from_slice::<serde_json::Value>(&payload)
+                && let Some(offset) = resp.get("offset").and_then(|v| v.as_u64()) {
                     resumed_offset = offset.min(file_size);
                 }
-            }
-        }
 
         if resumed_offset == 0 && file_size > 65536 {
             resumed_offset = file_size / 2;
@@ -315,7 +331,11 @@ pub fn run_receive(port: u16, output: Option<&str>, json: bool) {
         if let Some(out_path) = output {
             println!("  {} Saving received stream to `{}`", "💾".cyan(), out_path);
         }
-        println!("  {} Starting local KSP receiver endpoint on {}...", "📥".yellow(), addr_str);
+        println!(
+            "  {} Starting local KSP receiver endpoint on {}...",
+            "📥".yellow(),
+            addr_str
+        );
     }
 
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -347,7 +367,7 @@ pub fn run_receive(port: u16, output: Option<&str>, json: bool) {
             signing_key: key,
             capabilities: ksp_core::capability::default_capabilities(),
             gateway_target: None,
-            output_sink: output.map(|p| std::path::PathBuf::from(p)),
+            output_sink: output.map(std::path::PathBuf::from),
         };
 
         let _ = run_server(config).await;

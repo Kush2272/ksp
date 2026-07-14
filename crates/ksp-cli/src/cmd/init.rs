@@ -1,8 +1,8 @@
 //! `ksp init` — Initialize a KSP project in the current directory.
 
-use colored::Colorize;
-use crate::ui;
 use crate::config::KspConfig;
+use crate::ui;
+use colored::Colorize;
 use std::path::Path;
 
 pub fn run(json: bool) {
@@ -15,7 +15,9 @@ pub fn run(json: bool) {
     // Check if already initialized
     if cwd.join("ksp.toml").exists() {
         if json {
-            ui::json_output(&serde_json::json!({"status": "error", "message": "Already initialized"}));
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": "Already initialized"}),
+            );
         } else {
             ui::warning("ksp.toml already exists in this directory.");
             ui::info("Use `ksp config` to modify settings.");
@@ -55,9 +57,21 @@ pub fn run(json: bool) {
     } else if all_ok {
         ui::summary_ok("KSP project initialized successfully!");
         println!("  Next steps:");
-        println!("    {}  Start the server:   {}", "→".cyan(), "ksp server start".bold());
-        println!("    {}  Run diagnostics:    {}", "→".cyan(), "ksp doctor".bold());
-        println!("    {}  Connect a client:   {}", "→".cyan(), "ksp connect 127.0.0.1:9876".bold());
+        println!(
+            "    {}  Start the server:   {}",
+            "→".cyan(),
+            "ksp server start".bold()
+        );
+        println!(
+            "    {}  Run diagnostics:    {}",
+            "→".cyan(),
+            "ksp doctor".bold()
+        );
+        println!(
+            "    {}  Connect a client:   {}",
+            "→".cyan(),
+            "ksp connect 127.0.0.1:9876".bold()
+        );
         println!();
     } else {
         ui::summary_fail("Initialization completed with errors.");
@@ -92,6 +106,5 @@ fn init_certificate(dir: &Path) -> Result<(), String> {
 }
 
 fn init_ksp_dir(dir: &Path) -> Result<(), String> {
-    std::fs::create_dir_all(dir.join(".ksp"))
-        .map_err(|e| format!("Failed to create .ksp/: {}", e))
+    std::fs::create_dir_all(dir.join(".ksp")).map_err(|e| format!("Failed to create .ksp/: {}", e))
 }

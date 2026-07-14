@@ -1,9 +1,9 @@
 //! `ksp server start|stop|status` — KSP server management.
 
-use colored::Colorize;
 use crate::ui;
+use colored::Colorize;
+use ksp_server::{ServerConfig, load_or_generate_cert, run_server};
 use std::net::SocketAddr;
-use ksp_server::{load_or_generate_cert, run_server, ServerConfig};
 
 pub fn run_start(port: u16, host: &str, verbose: bool, json: bool) {
     if !json {
@@ -17,12 +17,10 @@ pub fn run_start(port: u16, host: &str, verbose: bool, json: bool) {
         println!();
     }
 
-    let bind_addr: SocketAddr = format!("{}:{}", host, port)
-        .parse()
-        .unwrap_or_else(|_| {
-            ui::failure(&format!("Invalid address: {}:{}", host, port));
-            std::process::exit(1);
-        });
+    let bind_addr: SocketAddr = format!("{}:{}", host, port).parse().unwrap_or_else(|_| {
+        ui::failure(&format!("Invalid address: {}:{}", host, port));
+        std::process::exit(1);
+    });
 
     let level = if verbose { "debug" } else { "info" };
     let _ = tracing_subscriber::fmt()
@@ -43,7 +41,9 @@ async fn run_server_async(bind_addr: SocketAddr, json: bool) {
     let key_path = std::path::Path::new("certs/server.key");
 
     let (certificate, signing_key) = if cert_path.exists() && key_path.exists() {
-        if !json { ui::success("Certificate loaded from certs/"); }
+        if !json {
+            ui::success("Certificate loaded from certs/");
+        }
         let cert_bytes = std::fs::read(cert_path).expect("Failed to read certificate");
         let key_bytes = std::fs::read(key_path).expect("Failed to read key");
         let cert = ksp_crypto::certificate::KspCertificate::deserialize(&cert_bytes)
@@ -53,7 +53,9 @@ async fn run_server_async(bind_addr: SocketAddr, json: bool) {
         (cert, key)
     } else {
         if !json {
-            ui::info("No certificate found in certs/ directory. Using server load_or_generate_cert()...");
+            ui::info(
+                "No certificate found in certs/ directory. Using server load_or_generate_cert()...",
+            );
         }
         load_or_generate_cert().expect("Failed to load or generate server certificate")
     };
@@ -100,14 +102,19 @@ pub fn run_stop(json: bool) {
         ui::info("Server stop requires the server to be running in a separate process.");
         ui::info("Use Ctrl+C in the server terminal, or terminate the process.");
     } else {
-        ui::json_output(&serde_json::json!({"status": "info", "message": "Use Ctrl+C to stop the server"}));
+        ui::json_output(
+            &serde_json::json!({"status": "info", "message": "Use Ctrl+C to stop the server"}),
+        );
     }
 }
 
 pub fn run_restart(port: u16, host: &str, verbose: bool, json: bool) {
     if !json {
         ui::header("KSP Server Restart");
-        println!("  {} Stopping any existing daemon instances...", "🔄".yellow());
+        println!(
+            "  {} Stopping any existing daemon instances...",
+            "🔄".yellow()
+        );
     }
     run_stop(json);
     std::thread::sleep(std::time::Duration::from_millis(500));
@@ -119,13 +126,25 @@ pub fn run_restart(port: u16, host: &str, verbose: bool, json: bool) {
 
 pub fn run_reload(json: bool) {
     if json {
-        println!("{}", serde_json::json!({"status": "reloaded", "config": "ksp.toml", "active_connections_preserved": true}));
+        println!(
+            "{}",
+            serde_json::json!({"status": "reloaded", "config": "ksp.toml", "active_connections_preserved": true})
+        );
         return;
     }
 
     ui::header("KSP Server Hot-Reload");
-    println!("  {} Validating updated `ksp.toml` configuration...", "✔".green().bold());
-    println!("  {} Signaled running daemon process (SIGHUP / IPC event)", "✔".green().bold());
-    println!("  {} Active cipher & replay tokens reloaded without dropping sessions!", "✔".green().bold());
+    println!(
+        "  {} Validating updated `ksp.toml` configuration...",
+        "✔".green().bold()
+    );
+    println!(
+        "  {} Signaled running daemon process (SIGHUP / IPC event)",
+        "✔".green().bold()
+    );
+    println!(
+        "  {} Active cipher & replay tokens reloaded without dropping sessions!",
+        "✔".green().bold()
+    );
     println!();
 }

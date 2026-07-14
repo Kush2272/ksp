@@ -11,12 +11,18 @@ use std::net::SocketAddr;
 
 pub fn run_shell(json: bool) {
     if json {
-        ui::json_output(&serde_json::json!({"status": "error", "message": "Interactive shell requires TTY/console mode"}));
+        ui::json_output(
+            &serde_json::json!({"status": "error", "message": "Interactive shell requires TTY/console mode"}),
+        );
         return;
     }
 
     ui::print_header("KSP Stateful Interactive Shell (REPL)");
-    println!("  {} Welcome to the KSP Developer Console v{}. Type `help` or `exit`.\n", "ℹ".blue(), ksp_core::CURRENT_VERSION);
+    println!(
+        "  {} Welcome to the KSP Developer Console v{}. Type `help` or `exit`.\n",
+        "ℹ".blue(),
+        ksp_core::CURRENT_VERSION
+    );
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
@@ -113,13 +119,12 @@ pub fn run_shell(json: bool) {
                 "ping" => {
                     if let Some(ref mut client) = active_client {
                         let start = std::time::Instant::now();
-                        if let Ok(()) = client.send_packet(PacketType::KeepAlive, 0, b"shell_ping").await {
-                            if let Ok((_pkt, _)) = client.receive_packet().await {
+                        if let Ok(()) = client.send_packet(PacketType::KeepAlive, 0, b"shell_ping").await
+                            && let Ok((_pkt, _)) = client.receive_packet().await {
                                 let rtt_us = start.elapsed().as_micros();
                                 println!("  {} Pong received in {} μs over encrypted tunnel\n", "←".green(), rtt_us);
                                 continue;
                             }
-                        }
                         println!("  {} Ping timed out or failed over active session.\n", "✘".red());
                     } else {
                         println!("  {} Not connected. Connect first with `connect <addr>` or use standard `ksp ping` outside REPL.\n", "⚠".yellow());

@@ -321,34 +321,66 @@ pub async fn handle_connection(
             PacketType::Data | PacketType::StreamData => {
                 let plaintext = session.decrypt_packet(&packet)?;
 
-                if let Ok(req) = serde_json::from_slice::<serde_json::Value>(&plaintext) {
-                    if let Some(op) = req.get("op").and_then(|v| v.as_str()) {
-                        match op {
-                            "FILE_HEADER" => {
-                                info!("Receiving file {} from {}", req.get("filename").and_then(|v| v.as_str()).unwrap_or("file"), addr);
-                                let ack = serde_json::json!({"op": "FILE_ACK", "status": "receiving"});
-                                let (seq, nonce) = session.send_nonce.next();
-                                let resp = session.encrypt_packet(PacketType::Data, Flags::empty(), packet.stream_id, seq, nonce, ack.to_string().as_bytes())?;
-                                send_packet(&mut stream, &resp).await?;
-                                continue;
-                            }
-                            "FILE_EOF" => {
-                                info!("Completed receiving file from {} (verified SHA-256: {})", addr, req.get("sha256").and_then(|v| v.as_str()).unwrap_or("none"));
-                                let ack = serde_json::json!({"op": "FILE_ACK", "status": "ok", "sha256": req.get("sha256")});
-                                let (seq, nonce) = session.send_nonce.next();
-                                let resp = session.encrypt_packet(PacketType::Data, Flags::empty(), packet.stream_id, seq, nonce, ack.to_string().as_bytes())?;
-                                send_packet(&mut stream, &resp).await?;
-                                continue;
-                            }
-                            "FILE_CHECKPOINT" => {
-                                let ack = serde_json::json!({"op": "FILE_CHECKPOINT_RESP", "offset": 65536});
-                                let (seq, nonce) = session.send_nonce.next();
-                                let resp = session.encrypt_packet(PacketType::Data, Flags::empty(), packet.stream_id, seq, nonce, ack.to_string().as_bytes())?;
-                                send_packet(&mut stream, &resp).await?;
-                                continue;
-                            }
-                            _ => {}
+                if let Ok(req) = serde_json::from_slice::<serde_json::Value>(&plaintext)
+                    && let Some(op) = req.get("op").and_then(|v| v.as_str())
+                {
+                    match op {
+                        "FILE_HEADER" => {
+                            info!(
+                                "Receiving file {} from {}",
+                                req.get("filename")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("file"),
+                                addr
+                            );
+                            let ack = serde_json::json!({"op": "FILE_ACK", "status": "receiving"});
+                            let (seq, nonce) = session.send_nonce.next();
+                            let resp = session.encrypt_packet(
+                                PacketType::Data,
+                                Flags::empty(),
+                                packet.stream_id,
+                                seq,
+                                nonce,
+                                ack.to_string().as_bytes(),
+                            )?;
+                            send_packet(&mut stream, &resp).await?;
+                            continue;
                         }
+                        "FILE_EOF" => {
+                            info!(
+                                "Completed receiving file from {} (verified SHA-256: {})",
+                                addr,
+                                req.get("sha256").and_then(|v| v.as_str()).unwrap_or("none")
+                            );
+                            let ack = serde_json::json!({"op": "FILE_ACK", "status": "ok", "sha256": req.get("sha256")});
+                            let (seq, nonce) = session.send_nonce.next();
+                            let resp = session.encrypt_packet(
+                                PacketType::Data,
+                                Flags::empty(),
+                                packet.stream_id,
+                                seq,
+                                nonce,
+                                ack.to_string().as_bytes(),
+                            )?;
+                            send_packet(&mut stream, &resp).await?;
+                            continue;
+                        }
+                        "FILE_CHECKPOINT" => {
+                            let ack =
+                                serde_json::json!({"op": "FILE_CHECKPOINT_RESP", "offset": 65536});
+                            let (seq, nonce) = session.send_nonce.next();
+                            let resp = session.encrypt_packet(
+                                PacketType::Data,
+                                Flags::empty(),
+                                packet.stream_id,
+                                seq,
+                                nonce,
+                                ack.to_string().as_bytes(),
+                            )?;
+                            send_packet(&mut stream, &resp).await?;
+                            continue;
+                        }
+                        _ => {}
                     }
                 }
 
@@ -356,29 +388,32 @@ pub async fn handle_connection(
                     if let Ok(mut backend_socket) = TcpStream::connect(backend_addr).await {
                         let _ = backend_socket.write_all(&plaintext).await;
                         let mut resp_buf = vec![0u8; 32768];
-                        if let Ok(n) = backend_socket.read(&mut resp_buf).await {
-                            if n > 0 {
-                                let (seq, nonce) = session.send_nonce.next();
-                                let response = session.encrypt_packet(
-                                    PacketType::Data,
-                                    Flags::empty(),
-                                    packet.stream_id,
-                                    seq,
-                                    nonce,
-                                    &resp_buf[..n],
-                                )?;
-                                send_packet(&mut stream, &response).await?;
-                            }
+                        if let Ok(n) = backend_socket.read(&mut resp_buf).await
+                            && n > 0
+                        {
+                            let (seq, nonce) = session.send_nonce.next();
+                            let response = session.encrypt_packet(
+                                PacketType::Data,
+                                Flags::empty(),
+                                packet.stream_id,
+                                seq,
+                                nonce,
+                                &resp_buf[..n],
+                            )?;
+                            send_packet(&mut stream, &response).await?;
                         }
                     }
                     continue;
                 }
 
-                if let Some(ref sink_path) = output_sink {
-                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(sink_path) {
-                        use std::io::Write;
-                        let _ = f.write_all(&plaintext);
-                    }
+                if let Some(ref sink_path) = output_sink
+                    && let Ok(mut f) = std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(sink_path)
+                {
+                    use std::io::Write;
+                    let _ = f.write_all(&plaintext);
                 }
 
                 debug!(
@@ -436,7 +471,8 @@ pub async fn run_server(config: ServerConfig) -> Result<(), KspError> {
                 let sink = config.output_sink.clone();
 
                 tokio::spawn(async move {
-                    if let Err(e) = handle_connection(stream, addr, cert, caps, key, gw, sink).await {
+                    if let Err(e) = handle_connection(stream, addr, cert, caps, key, gw, sink).await
+                    {
                         warn!("Connection from {} failed: {}", addr, e);
                     }
                 });

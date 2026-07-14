@@ -129,10 +129,22 @@ struct InitStep {
 }
 
 const INIT_STEPS: &[InitStep] = &[
-    InitStep { label: "Loading configuration", delay_ms: 70 },
-    InitStep { label: "Verifying keypair", delay_ms: 110 },
-    InitStep { label: "Checking protocol version", delay_ms: 60 },
-    InitStep { label: "Priming session cache", delay_ms: 90 },
+    InitStep {
+        label: "Loading configuration",
+        delay_ms: 70,
+    },
+    InitStep {
+        label: "Verifying keypair",
+        delay_ms: 110,
+    },
+    InitStep {
+        label: "Checking protocol version",
+        delay_ms: 60,
+    },
+    InitStep {
+        label: "Priming session cache",
+        delay_ms: 90,
+    },
 ];
 
 async fn init_checklist() -> io::Result<()> {
@@ -162,15 +174,8 @@ fn print_done(label: &str) -> io::Result<()> {
 fn settle_banner() -> io::Result<()> {
     println!();
     println!("  {}", "─".repeat(52).dimmed());
-    println!(
-        "  {}  {}",
-        "●".green(),
-        "ready — type".dimmed()
-    );
-    println!(
-        "    {} for a list of commands",
-        "ksp --help".cyan().bold()
-    );
+    println!("  {}  {}", "●".green(), "ready — type".dimmed());
+    println!("    {} for a list of commands", "ksp --help".cyan().bold());
     println!();
     Ok(())
 }

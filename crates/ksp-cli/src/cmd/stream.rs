@@ -9,7 +9,13 @@ pub fn run_list(json: bool) {
         ui::info("Connect first with: ksp connect <address>");
         println!();
 
-        let mut t = ui::table(&["Stream ID", "State", "Send Window", "Recv Window", "Priority"]);
+        let mut t = ui::table(&[
+            "Stream ID",
+            "State",
+            "Send Window",
+            "Recv Window",
+            "Priority",
+        ]);
         t.add_row(vec!["(no active streams)", "—", "—", "—", "—"]);
         println!("{t}");
     } else {
@@ -19,7 +25,9 @@ pub fn run_list(json: bool) {
 
 pub fn run_open(json: bool) {
     if json {
-        ui::json_output(&serde_json::json!({"status": "info", "message": "Stream open requires active session"}));
+        ui::json_output(
+            &serde_json::json!({"status": "info", "message": "Stream open requires active session"}),
+        );
     } else {
         ui::print_header("KSP Stream Open");
         ui::info("Opening a new stream requires an active session.");
@@ -40,14 +48,25 @@ pub fn run_close(stream_id: u32, json: bool) {
 pub fn run_reset(json: bool) {
     use colored::Colorize;
     if json {
-        println!("{}", serde_json::json!({"status": "reset", "streams_cleared": 4, "flow_control_window_reset": 65536}));
+        println!(
+            "{}",
+            serde_json::json!({"status": "reset", "streams_cleared": 4, "flow_control_window_reset": 65536})
+        );
         return;
     }
 
     ui::header("KSP Stream Reset");
-    println!("  {} Resetting all multiplexed stream flow control windows...", "🔄".yellow());
-    println!("  {} Cleared stalled frames across all active logical channels (`RST_STREAM` sent).", "✔".green().bold());
-    println!("  {} Send/Recv window buffers restored to default 64 KB per stream.", "✔".green().bold());
+    println!(
+        "  {} Resetting all multiplexed stream flow control windows...",
+        "🔄".yellow()
+    );
+    println!(
+        "  {} Cleared stalled frames across all active logical channels (`RST_STREAM` sent).",
+        "✔".green().bold()
+    );
+    println!(
+        "  {} Send/Recv window buffers restored to default 64 KB per stream.",
+        "✔".green().bold()
+    );
     println!();
 }
-

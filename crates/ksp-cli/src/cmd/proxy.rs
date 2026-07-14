@@ -3,8 +3,8 @@
 //! - `ksp proxy`: Local TCP -> KSP Encrypted Tunnel (`stunnel` / `ngrok` parity). Wraps unencrypted local TCP traffic into encrypted KSP streams to an upstream KSP server.
 //! - `ksp gateway`: KSP Encrypted Server -> Upstream HTTP/TCP Backend Bridge (`nginx` / reverse proxy parity). Decrypts incoming KSP traffic and proxies it to local web apps.
 
-use colored::Colorize;
 use crate::ui;
+use colored::Colorize;
 use ksp_client::KspClient;
 use ksp_core::types::PacketType;
 use std::net::SocketAddr;
@@ -17,7 +17,9 @@ pub fn run_proxy(listen: &str, upstream: &str, json: bool) {
         Err(_) => match format!("{}:8080", listen).parse() {
             Ok(a) => a,
             Err(e) => {
-                if !json { ui::failure(&format!("Invalid listen address '{}': {}", listen, e)); }
+                if !json {
+                    ui::failure(&format!("Invalid listen address '{}': {}", listen, e));
+                }
                 return;
             }
         },
@@ -27,7 +29,12 @@ pub fn run_proxy(listen: &str, upstream: &str, json: bool) {
     let upstream_addr: SocketAddr = match upstream_str.parse() {
         Ok(a) => a,
         Err(e) => {
-            if !json { ui::failure(&format!("Invalid upstream KSP address '{}': {}", upstream_str, e)); }
+            if !json {
+                ui::failure(&format!(
+                    "Invalid upstream KSP address '{}': {}",
+                    upstream_str, e
+                ));
+            }
             return;
         }
     };
@@ -36,10 +43,21 @@ pub fn run_proxy(listen: &str, upstream: &str, json: bool) {
         ui::print_header("KSP High-Performance L4 Tunnel Proxy Relay");
         ui::kv("Listen Address (TCP)", &listen_addr.to_string());
         ui::kv("Upstream Target (KSP)", &upstream_str);
-        ui::kv("Multiplexing", "Dynamic Stream Assignment (1 KSP Stream per TCP Socket)");
-        ui::kv("Encryption", "AES-256-GCM / ChaCha20-Poly1305 End-to-End Tunnel");
+        ui::kv(
+            "Multiplexing",
+            "Dynamic Stream Assignment (1 KSP Stream per TCP Socket)",
+        );
+        ui::kv(
+            "Encryption",
+            "AES-256-GCM / ChaCha20-Poly1305 End-to-End Tunnel",
+        );
         println!();
-        println!("  {} Proxying local unencrypted TCP frames on {} -> encrypted KSP {}", "🚀".yellow(), listen_addr.to_string().cyan().bold(), upstream_str.green().bold());
+        println!(
+            "  {} Proxying local unencrypted TCP frames on {} -> encrypted KSP {}",
+            "🚀".yellow(),
+            listen_addr.to_string().cyan().bold(),
+            upstream_str.green().bold()
+        );
         println!("  {} Press Ctrl+C to stop proxy daemon.\n", "ℹ".blue());
     } else {
         ui::json_output(&serde_json::json!({
@@ -80,7 +98,7 @@ pub fn run_proxy(listen: &str, upstream: &str, json: bool) {
                                     match n {
                                         Ok(0) | Err(_) => break,
                                         Ok(bytes_read) => {
-                                            if let Err(_) = client.send_packet(PacketType::Data, sid, &buf[..bytes_read]).await {
+                                            if client.send_packet(PacketType::Data, sid, &buf[..bytes_read]).await.is_err() {
                                                 break;
                                             }
                                             crate::cmd::telemetry::TelemetrySnapshot::record_packets(bytes_read as u64, 0, 1, 0);
@@ -92,7 +110,7 @@ pub fn run_proxy(listen: &str, upstream: &str, json: bool) {
                                     match pkt_res {
                                         Ok((pkt, payload)) => {
                                             if pkt.stream_id == sid || pkt.stream_id == 0 {
-                                                if let Err(_) = tcp_socket.write_all(&payload).await {
+                                                if tcp_socket.write_all(&payload).await.is_err() {
                                                     break;
                                                 }
                                                 let _ = tcp_socket.flush().await;
@@ -117,7 +135,9 @@ pub fn run_gateway(listen: &str, target_http: &str, json: bool) {
         match listen.parse() {
             Ok(a) => a,
             Err(_) => {
-                if !json { ui::failure(&format!("Invalid KSP listen address '{}'", listen)); }
+                if !json {
+                    ui::failure(&format!("Invalid KSP listen address '{}'", listen));
+                }
                 return;
             }
         }
@@ -125,7 +145,9 @@ pub fn run_gateway(listen: &str, target_http: &str, json: bool) {
         match format!("{}:9876", listen).parse() {
             Ok(a) => a,
             Err(_) => {
-                if !json { ui::failure(&format!("Invalid KSP listen port '{}'", listen)); }
+                if !json {
+                    ui::failure(&format!("Invalid KSP listen port '{}'", listen));
+                }
                 return;
             }
         }
@@ -139,7 +161,12 @@ pub fn run_gateway(listen: &str, target_http: &str, json: bool) {
     let http_addr: SocketAddr = match target_str.parse() {
         Ok(a) => a,
         Err(e) => {
-            if !json { ui::failure(&format!("Invalid HTTP upstream target '{}': {}", target_str, e)); }
+            if !json {
+                ui::failure(&format!(
+                    "Invalid HTTP upstream target '{}': {}",
+                    target_str, e
+                ));
+            }
             return;
         }
     };
@@ -148,10 +175,21 @@ pub fn run_gateway(listen: &str, target_http: &str, json: bool) {
         ui::print_header("KSP <-> HTTP/REST Reverse Proxy Gateway");
         ui::kv("KSP Listen Address", &format!("ksp://{}", listen_addr));
         ui::kv("HTTP Upstream Target", &format!("http://{}", http_addr));
-        ui::kv("Protocol Translation", "KSP Streams -> HTTP/1.1 Request/Response Bridge");
-        ui::kv("Zero-RTT Support", "Active (Stream id-based multiplexing to backend)");
+        ui::kv(
+            "Protocol Translation",
+            "KSP Streams -> HTTP/1.1 Request/Response Bridge",
+        );
+        ui::kv(
+            "Zero-RTT Support",
+            "Active (Stream id-based multiplexing to backend)",
+        );
         println!();
-        println!("  {} Gateway active! Translating incoming KSP traffic on {} -> backend {}", "✔".green().bold(), listen_addr.to_string().cyan().bold(), http_addr.to_string().yellow().bold());
+        println!(
+            "  {} Gateway active! Translating incoming KSP traffic on {} -> backend {}",
+            "✔".green().bold(),
+            listen_addr.to_string().cyan().bold(),
+            http_addr.to_string().yellow().bold()
+        );
         println!("  {} Press Ctrl+C to stop gateway bridge.\n", "ℹ".blue());
     } else {
         ui::json_output(&serde_json::json!({
@@ -164,11 +202,13 @@ pub fn run_gateway(listen: &str, target_http: &str, json: bool) {
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
-        use ksp_server::{load_or_generate_cert, run_server, ServerConfig};
+        use ksp_server::{ServerConfig, load_or_generate_cert, run_server};
         let (cert, key) = match load_or_generate_cert() {
             Ok((c, k)) => (c, k),
             Err(e) => {
-                if !json { ui::failure(&format!("Failed to init gateway certificate: {}", e)); }
+                if !json {
+                    ui::failure(&format!("Failed to init gateway certificate: {}", e));
+                }
                 return;
             }
         };

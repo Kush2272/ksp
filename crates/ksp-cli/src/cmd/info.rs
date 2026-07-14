@@ -11,7 +11,11 @@ pub fn run(json: bool) {
 
     let os_name = sysinfo::System::name().unwrap_or_else(|| "Unknown".into());
     let os_version = sysinfo::System::os_version().unwrap_or_else(|| "Unknown".into());
-    let cpu_brand = sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_else(|| "Unknown".into());
+    let cpu_brand = sys
+        .cpus()
+        .first()
+        .map(|c| c.brand().to_string())
+        .unwrap_or_else(|| "Unknown".into());
     let cpu_count = sys.cpus().len();
     let total_mem = sys.total_memory();
 
@@ -39,15 +43,35 @@ pub fn run(json: bool) {
         }));
     } else {
         let mut t = ui::table(&["Property", "Value"]);
-        t.add_row(vec!["KSP CLI Version", &format!("v{}", env!("CARGO_PKG_VERSION"))]);
-        t.add_row(vec!["Protocol Version", &format!("KSP v{}", ksp_core::CURRENT_VERSION)]);
+        t.add_row(vec![
+            "KSP CLI Version",
+            &format!("v{}", env!("CARGO_PKG_VERSION")),
+        ]);
+        t.add_row(vec![
+            "Protocol Version",
+            &format!("KSP v{}", ksp_core::CURRENT_VERSION),
+        ]);
         t.add_row(vec!["OS", &format!("{} {}", os_name, os_version)]);
         t.add_row(vec!["Architecture", std::env::consts::ARCH]);
         t.add_row(vec!["CPU", &cpu_brand]);
         t.add_row(vec!["CPU Cores", &cpu_count.to_string()]);
         t.add_row(vec!["Memory", &ui::format_bytes(total_mem)]);
-        t.add_row(vec!["AES-NI", if aesni { "✔ Supported" } else { "✘ Not detected" }]);
-        t.add_row(vec!["AVX2", if avx2 { "✔ Supported" } else { "✘ Not detected" }]);
+        t.add_row(vec![
+            "AES-NI",
+            if aesni {
+                "✔ Supported"
+            } else {
+                "✘ Not detected"
+            },
+        ]);
+        t.add_row(vec![
+            "AVX2",
+            if avx2 {
+                "✔ Supported"
+            } else {
+                "✘ Not detected"
+            },
+        ]);
         println!("{t}");
     }
 }

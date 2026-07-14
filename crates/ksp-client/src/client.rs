@@ -76,7 +76,10 @@ impl KspClient {
     }
 
     /// Send a raw `KspPacket` across a TCP stream.
-    pub async fn send_raw_packet(stream: &mut TcpStream, packet: &KspPacket) -> Result<(), KspError> {
+    pub async fn send_raw_packet(
+        stream: &mut TcpStream,
+        packet: &KspPacket,
+    ) -> Result<(), KspError> {
         let bytes = packet.serialize();
         stream.write_all(&bytes).await?;
         stream.flush().await?;
@@ -102,7 +105,8 @@ impl KspClient {
             ephemeral_public_key: ephemeral_keypair.public_key_bytes(),
         };
 
-        let hello_packet = KspPacket::new_handshake(PacketType::ClientHello, client_hello.serialize());
+        let hello_packet =
+            KspPacket::new_handshake(PacketType::ClientHello, client_hello.serialize());
         Self::send_raw_packet(&mut stream, &hello_packet).await?;
         info!("Sent ClientHello");
 
@@ -124,7 +128,9 @@ impl KspClient {
         }
         let cert_payload = &cert_packet.payload;
         if cert_payload.len() < 64 {
-            return Err(KspError::HandshakeError("Certificate message truncated".into()));
+            return Err(KspError::HandshakeError(
+                "Certificate message truncated".into(),
+            ));
         }
         let cert_bytes_len = cert_payload.len() - 64;
         let certificate = KspCertificate::deserialize(&cert_payload[..cert_bytes_len])?;
@@ -132,7 +138,10 @@ impl KspClient {
 
         // Verify certificate self-signed signature
         certificate.validate_self_signed()?;
-        info!("Server certificate identity validated: {}", certificate.subject);
+        info!(
+            "Server certificate identity validated: {}",
+            certificate.subject
+        );
 
         // Verify key-exchange binding signature
         let mut binding_data = Vec::with_capacity(32 * 4);
@@ -148,7 +157,9 @@ impl KspClient {
         verifying_key
             .verify(&binding_data, &signature)
             .map_err(|_| {
-                KspError::CertificateError("MITM alert: server did not sign the key exchange".into())
+                KspError::CertificateError(
+                    "MITM alert: server did not sign the key exchange".into(),
+                )
             })?;
         info!("Cryptographic binding of key exchange verified!");
 
@@ -204,7 +215,9 @@ impl KspClient {
         let auth_response_payload = session.decrypt_packet(&auth_response_packet)?;
         let auth_result = AuthResult::deserialize(&auth_response_payload)?;
         if auth_result == AuthResult::Failed {
-            return Err(KspError::HandshakeError("server rejected authentication".into()));
+            return Err(KspError::HandshakeError(
+                "server rejected authentication".into(),
+            ));
         }
         info!("Authentication verified by server");
 
@@ -233,7 +246,9 @@ impl KspClient {
 
         let (server_finish_packet, _) = Self::read_raw_packet(&mut stream).await?;
         if server_finish_packet.packet_type != PacketType::HandshakeFinish {
-            return Err(KspError::HandshakeError("expected server HandshakeFinish".into()));
+            return Err(KspError::HandshakeError(
+                "expected server HandshakeFinish".into(),
+            ));
         }
         let server_finish_payload = session.decrypt_packet(&server_finish_packet)?;
         let server_finish = HandshakeFinish::deserialize(&server_finish_payload)?;
@@ -241,7 +256,9 @@ impl KspClient {
         let expected_server_verify =
             ksp_crypto::compute_finished_mac(&session.keys.server_write_key, &transcript);
         if server_finish.verify_data != expected_server_verify {
-            return Err(KspError::HandshakeError("server HandshakeFinish verification failed".into()));
+            return Err(KspError::HandshakeError(
+                "server HandshakeFinish verification failed".into(),
+            ));
         }
         info!("Server HandshakeFinish verified. Channel securely established!");
 
@@ -268,7 +285,12 @@ impl KspClient {
     }
 
     /// Send any encrypted packet (e.g. StreamOpen, StreamClose, Ping/Data).
-    pub async fn send_packet(&mut self, packet_type: PacketType, stream_id: u32, payload: &[u8]) -> Result<(), KspError> {
+    pub async fn send_packet(
+        &mut self,
+        packet_type: PacketType,
+        stream_id: u32,
+        payload: &[u8],
+    ) -> Result<(), KspError> {
         let (seq, nonce) = self.session.send_nonce.next();
         let packet = self.session.encrypt_packet(
             packet_type,

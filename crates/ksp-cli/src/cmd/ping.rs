@@ -3,12 +3,12 @@
 //! Establishes a secure KSP session via `KspClient`, measures handshake timing,
 //! and transmits encrypted protocol ping packets to measure real round-trip times.
 
-use colored::Colorize;
 use crate::ui;
-use std::net::SocketAddr;
-use std::time::Instant;
+use colored::Colorize;
 use ksp_client::KspClient;
 use ksp_core::types::PacketType;
+use std::net::SocketAddr;
+use std::time::Instant;
 
 pub fn run(address: &str, json: bool, _verbosity: u8) {
     if !json {
@@ -21,7 +21,9 @@ pub fn run(address: &str, json: bool, _verbosity: u8) {
         Ok(a) => a,
         Err(e) => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": format!("Invalid address: {}", e)}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": format!("Invalid address: {}", e)}),
+                );
             } else {
                 ui::failure(&format!("Invalid address '{}': {}", addr_str, e));
             }
@@ -43,16 +45,24 @@ pub fn run(address: &str, json: bool, _verbosity: u8) {
 async fn ping_async(addr: SocketAddr, json: bool) {
     let total_start = Instant::now();
 
-    let spin = if !json { Some(ui::spinner("Establishing encrypted KSP session...")) } else { None };
+    let spin = if !json {
+        Some(ui::spinner("Establishing encrypted KSP session..."))
+    } else {
+        None
+    };
     let connect_start = Instant::now();
 
     let mut client = match KspClient::connect(addr).await {
         Ok(c) => {
-            if let Some(sp) = spin { sp.finish_and_clear(); }
+            if let Some(sp) = spin {
+                sp.finish_and_clear();
+            }
             c
         }
         Err(e) => {
-            if let Some(sp) = spin { sp.finish_and_clear(); }
+            if let Some(sp) = spin {
+                sp.finish_and_clear();
+            }
             if json {
                 ui::json_output(&serde_json::json!({
                     "status": "error",
@@ -69,10 +79,25 @@ async fn ping_async(addr: SocketAddr, json: bool) {
     let handshake_us = connect_start.elapsed().as_micros() as u64;
 
     if !json {
-        println!("  {:<22} {}", "✔ KSP Handshake OK".green().bold(), format!("{} μs", handshake_us).yellow());
-        println!("  {:<22} {}", "  Session ID".dimmed(), client.session.id_string().cyan());
-        println!("  {:<22} {}", "  Cipher Suite".dimmed(), format!("{}", client.cipher_suite).white());
-        println!("  {}", "── Protocol RTT Echo ─────────────────────────────────────────".dimmed());
+        println!(
+            "  {:<22} {}",
+            "✔ KSP Handshake OK".green().bold(),
+            format!("{} μs", handshake_us).yellow()
+        );
+        println!(
+            "  {:<22} {}",
+            "  Session ID".dimmed(),
+            client.session.id_string().cyan()
+        );
+        println!(
+            "  {:<22} {}",
+            "  Cipher Suite".dimmed(),
+            format!("{}", client.cipher_suite).white()
+        );
+        println!(
+            "  {}",
+            "── Protocol RTT Echo ─────────────────────────────────────────".dimmed()
+        );
     }
 
     let mut rtts = Vec::new();
@@ -83,7 +108,10 @@ async fn ping_async(addr: SocketAddr, json: bool) {
         let send_start = Instant::now();
 
         // Send encrypted protocol ping
-        if let Err(e) = client.send_packet(PacketType::KeepAlive, 0, ping_payload.as_bytes()).await {
+        if let Err(e) = client
+            .send_packet(PacketType::KeepAlive, 0, ping_payload.as_bytes())
+            .await
+        {
             if !json {
                 println!("    {} seq={} failed: {}", "✘ Ping".red(), seq, e);
             }
@@ -95,9 +123,19 @@ async fn ping_async(addr: SocketAddr, json: bool) {
             Ok((_pkt, _payload)) => {
                 let rtt_us = send_start.elapsed().as_micros() as u64;
                 rtts.push(rtt_us);
-                crate::cmd::telemetry::TelemetrySnapshot::record_packets(ping_payload.len() as u64, _payload.len() as u64, 2, 0);
+                crate::cmd::telemetry::TelemetrySnapshot::record_packets(
+                    ping_payload.len() as u64,
+                    _payload.len() as u64,
+                    2,
+                    0,
+                );
                 if !json {
-                    println!("    {} seq={} time={} μs (encrypted)", "← Pong".green(), seq, rtt_us);
+                    println!(
+                        "    {} seq={} time={} μs (encrypted)",
+                        "← Pong".green(),
+                        seq,
+                        rtt_us
+                    );
                 }
             }
             Err(e) => {
@@ -117,7 +155,11 @@ async fn ping_async(addr: SocketAddr, json: bool) {
     if json {
         let min_rtt = rtts.iter().min().copied().unwrap_or(0);
         let max_rtt = rtts.iter().max().copied().unwrap_or(0);
-        let avg_rtt = if !rtts.is_empty() { rtts.iter().sum::<u64>() / rtts.len() as u64 } else { 0 };
+        let avg_rtt = if !rtts.is_empty() {
+            rtts.iter().sum::<u64>() / rtts.len() as u64
+        } else {
+            0
+        };
 
         ui::json_output(&serde_json::json!({
             "status": "ok",
@@ -136,9 +178,20 @@ async fn ping_async(addr: SocketAddr, json: bool) {
         let max_rtt = rtts.iter().max().copied().unwrap();
         let avg_rtt = rtts.iter().sum::<u64>() / rtts.len() as u64;
 
-        println!("  {}", "── Summary ───────────────────────────────────────────────────".dimmed());
-        println!("    Sent: {}, Received: {}, Handshake: {} μs", num_pings, rtts.len(), handshake_us);
-        println!("    RTT min/avg/max = {} / {} / {} μs", min_rtt, avg_rtt, max_rtt);
+        println!(
+            "  {}",
+            "── Summary ───────────────────────────────────────────────────".dimmed()
+        );
+        println!(
+            "    Sent: {}, Received: {}, Handshake: {} μs",
+            num_pings,
+            rtts.len(),
+            handshake_us
+        );
+        println!(
+            "    RTT min/avg/max = {} / {} / {} μs",
+            min_rtt, avg_rtt, max_rtt
+        );
         println!();
     }
 }

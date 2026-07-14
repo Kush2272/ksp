@@ -25,8 +25,16 @@ pub fn run(target: &str, json: bool) {
         "client" => generate_client_boilerplate(),
         "packet" => generate_packet_sample(),
         other => {
-            println!("  {} Unknown generator target: '{}'", "✘".red().bold(), other.white());
-            println!("  {} Available targets: {}", "ℹ".blue().bold(), "config, cert, server, client, packet".yellow());
+            println!(
+                "  {} Unknown generator target: '{}'",
+                "✘".red().bold(),
+                other.white()
+            );
+            println!(
+                "  {} Available targets: {}",
+                "ℹ".blue().bold(),
+                "config, cert, server, client, packet".yellow()
+            );
             println!();
         }
     }
@@ -35,8 +43,15 @@ pub fn run(target: &str, json: bool) {
 fn generate_config() {
     let path = Path::new("ksp.toml");
     if path.exists() {
-        println!("  {} {} already exists in the current directory.", "✘".yellow(), "ksp.toml".white().bold());
-        println!("  {} Use `ksp config reset` or delete it first to regenerate.", "ℹ".blue());
+        println!(
+            "  {} {} already exists in the current directory.",
+            "✘".yellow(),
+            "ksp.toml".white().bold()
+        );
+        println!(
+            "  {} Use `ksp config reset` or delete it first to regenerate.",
+            "ℹ".blue()
+        );
         return;
     }
 
@@ -61,8 +76,15 @@ private_key = "certs/server.key"
 
     match fs::write(path, config_content) {
         Ok(_) => {
-            println!("  {} Generated clean configuration -> {}", "✔".green().bold(), "ksp.toml".white().bold());
-            println!("  {} Run `ksp config show` to inspect settings.", "ℹ".blue());
+            println!(
+                "  {} Generated clean configuration -> {}",
+                "✔".green().bold(),
+                "ksp.toml".white().bold()
+            );
+            println!(
+                "  {} Run `ksp config show` to inspect settings.",
+                "ℹ".blue()
+            );
         }
         Err(e) => {
             println!("  {} Failed to write ksp.toml: {}", "✘".red().bold(), e);
@@ -77,7 +99,11 @@ fn generate_cert() {
     let key_path = Path::new("certs/server.key");
 
     if cert_path.exists() && key_path.exists() {
-        println!("  {} Certificates already exist inside {} directory.", "✔".green(), "certs/".white().bold());
+        println!(
+            "  {} Certificates already exist inside {} directory.",
+            "✔".green(),
+            "certs/".white().bold()
+        );
         return;
     }
 
@@ -87,8 +113,16 @@ fn generate_cert() {
     fs::write(cert_path, dummy_cert).ok();
     fs::write(key_path, dummy_key).ok();
 
-    println!("  {} Generated X.509/Ed25519 identity key -> {}", "✔".green().bold(), "certs/server.key".white().bold());
-    println!("  {} Generated diagnostic public certificate -> {}", "✔".green().bold(), "certs/server.cert".white().bold());
+    println!(
+        "  {} Generated X.509/Ed25519 identity key -> {}",
+        "✔".green().bold(),
+        "certs/server.key".white().bold()
+    );
+    println!(
+        "  {} Generated diagnostic public certificate -> {}",
+        "✔".green().bold(),
+        "certs/server.cert".white().bold()
+    );
     println!();
 }
 
@@ -120,7 +154,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match fs::write(path, code) {
         Ok(_) => {
-            println!("  {} Generated server code -> {}", "✔".green().bold(), "src/bin/server.rs".white().bold());
+            println!(
+                "  {} Generated server code -> {}",
+                "✔".green().bold(),
+                "src/bin/server.rs".white().bold()
+            );
             println!("  {} Run with `cargo run --bin server`.", "ℹ".blue());
         }
         Err(e) => {
@@ -155,7 +193,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match fs::write(path, code) {
         Ok(_) => {
-            println!("  {} Generated client code -> {}", "✔".green().bold(), "src/bin/client.rs".white().bold());
+            println!(
+                "  {} Generated client code -> {}",
+                "✔".green().bold(),
+                "src/bin/client.rs".white().bold()
+            );
             println!("  {} Run with `cargo run --bin client`.", "ℹ".blue());
         }
         Err(e) => {
@@ -174,16 +216,28 @@ fn generate_packet_sample() {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x12, // Sequence #1042
         0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22, // Nonce
         0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x4B, 0x53, 0x50, // Payload: "Hello KSP"
-        0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF // AEAD Tag
+        0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE,
+        0xFF, // AEAD Tag
     ];
 
     match fs::write(path, dummy_packet) {
         Ok(_) => {
-            println!("  {} Generated binary packet -> {}", "✔".green().bold(), "sample_packet.bin".white().bold());
-            println!("  {} Inspect with `ksp packet inspect sample_packet.bin`.", "ℹ".blue());
+            println!(
+                "  {} Generated binary packet -> {}",
+                "✔".green().bold(),
+                "sample_packet.bin".white().bold()
+            );
+            println!(
+                "  {} Inspect with `ksp packet inspect sample_packet.bin`.",
+                "ℹ".blue()
+            );
         }
         Err(e) => {
-            println!("  {} Failed to write sample packet: {}", "✘".red().bold(), e);
+            println!(
+                "  {} Failed to write sample packet: {}",
+                "✘".red().bold(),
+                e
+            );
         }
     }
     println!();

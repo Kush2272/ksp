@@ -3,9 +3,9 @@
 //! Verifies real execution, JSON schema invariants, file generation (`ksp.toml`, certs),
 //! diagnostic score calculation, shell completions, and plugin discovery using the compiled `ksp` binary.
 
-use std::process::Command;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
+use std::process::Command;
 
 fn ksp_bin() -> PathBuf {
     let p = PathBuf::from(env!("CARGO_BIN_EXE_ksp"));
@@ -40,7 +40,7 @@ fn test_cli_version_output() {
 #[test]
 fn test_cli_version_json_schema() {
     let output = Command::new(ksp_bin())
-        .args(&["--json", "version"])
+        .args(["--json", "version"])
         .output()
         .expect("Failed to execute ksp --json version");
     assert!(output.status.success());
@@ -54,12 +54,12 @@ fn test_cli_version_json_schema() {
 #[test]
 fn test_cli_doctor_json_schema_and_score() {
     let output = Command::new(ksp_bin())
-        .args(&["--json", "doctor"])
+        .args(["--json", "doctor"])
         .output()
         .expect("Failed to execute ksp --json doctor");
     assert!(output.status.success());
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout)
-        .expect("Doctor output must be valid JSON");
+    let json: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("Doctor output must be valid JSON");
     assert!(json["health_score"].is_number());
     assert!(json["diagnostics"].is_array());
     assert!(json["runtime_ms"].is_number());
@@ -68,7 +68,7 @@ fn test_cli_doctor_json_schema_and_score() {
 #[test]
 fn test_cli_completion_bash_and_zsh() {
     let bash_out = Command::new(ksp_bin())
-        .args(&["completion", "bash"])
+        .args(["completion", "bash"])
         .output()
         .expect("Failed to generate bash completion");
     assert!(bash_out.status.success());
@@ -76,7 +76,7 @@ fn test_cli_completion_bash_and_zsh() {
     assert!(bash_str.contains("complete -F") || bash_str.contains("_ksp"));
 
     let zsh_out = Command::new(ksp_bin())
-        .args(&["completion", "zsh"])
+        .args(["completion", "zsh"])
         .output()
         .expect("Failed to generate zsh completion");
     assert!(zsh_out.status.success());
@@ -92,11 +92,15 @@ fn test_cli_cert_generate_and_inspect_e2e() {
 
     // 1. Generate cert
     let gen_out = Command::new(ksp_bin())
-        .args(&[
-            "cert", "generate",
-            "--subject", "ksp://e2e.test.node",
-            "--days", "90",
-            "--output", prefix.to_str().unwrap()
+        .args([
+            "cert",
+            "generate",
+            "--subject",
+            "ksp://e2e.test.node",
+            "--days",
+            "90",
+            "--output",
+            prefix.to_str().unwrap(),
         ])
         .output()
         .expect("Failed to run ksp cert generate");
@@ -104,17 +108,23 @@ fn test_cli_cert_generate_and_inspect_e2e() {
 
     let cert_path = temp_dir.join("test_identity.cert");
     let key_path = temp_dir.join("test_identity.key");
-    assert!(cert_path.exists(), "Certificate file must be written to disk");
-    assert!(key_path.exists(), "Private key file must be written to disk");
+    assert!(
+        cert_path.exists(),
+        "Certificate file must be written to disk"
+    );
+    assert!(
+        key_path.exists(),
+        "Private key file must be written to disk"
+    );
 
     // 2. Inspect cert in JSON mode
     let insp_out = Command::new(ksp_bin())
-        .args(&["--json", "cert", "inspect", cert_path.to_str().unwrap()])
+        .args(["--json", "cert", "inspect", cert_path.to_str().unwrap()])
         .output()
         .expect("Failed to run ksp cert inspect");
     assert!(insp_out.status.success());
-    let json: serde_json::Value = serde_json::from_slice(&insp_out.stdout)
-        .expect("Inspect output must be valid JSON");
+    let json: serde_json::Value =
+        serde_json::from_slice(&insp_out.stdout).expect("Inspect output must be valid JSON");
     assert_eq!(json["subject"], "ksp://e2e.test.node");
     assert_eq!(json["expired"], false);
     assert!(json["not_after"].is_number());
@@ -140,12 +150,12 @@ fn test_cli_init_and_config_validate() {
     // Validate config inside temp_dir
     let val_out = Command::new(ksp_bin())
         .current_dir(&temp_dir)
-        .args(&["--json", "config", "validate"])
+        .args(["--json", "config", "validate"])
         .output()
         .expect("Failed to run ksp config validate");
     assert!(val_out.status.success());
-    let json: serde_json::Value = serde_json::from_slice(&val_out.stdout)
-        .expect("Config validate output must be valid JSON");
+    let json: serde_json::Value =
+        serde_json::from_slice(&val_out.stdout).expect("Config validate output must be valid JSON");
     assert_eq!(json["status"], "valid");
 
     let _ = fs::remove_dir_all(&temp_dir);
@@ -154,12 +164,12 @@ fn test_cli_init_and_config_validate() {
 #[test]
 fn test_cli_benchmark_json() {
     let output = Command::new(ksp_bin())
-        .args(&["--json", "benchmark"])
+        .args(["--json", "benchmark"])
         .output()
         .expect("Failed to execute ksp benchmark --json");
     assert!(output.status.success());
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout)
-        .expect("Benchmark output must be valid JSON");
+    let json: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("Benchmark output must be valid JSON");
     assert!(json["aes_256_gcm_mbps"].is_number());
     assert!(json["chacha20_mbps"].is_number());
     assert!(json["handshake_ns"].is_number());
@@ -168,12 +178,12 @@ fn test_cli_benchmark_json() {
 #[test]
 fn test_cli_plugins_list_json() {
     let output = Command::new(ksp_bin())
-        .args(&["--json", "plugins", "list"])
+        .args(["--json", "plugins", "list"])
         .output()
         .expect("Failed to execute ksp plugins list --json");
     assert!(output.status.success());
-    let json: serde_json::Value = serde_json::from_slice(&output.stdout)
-        .expect("Plugins list output must be valid JSON");
+    let json: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("Plugins list output must be valid JSON");
     assert_eq!(json["status"], "success");
     assert!(json["plugins"].is_array());
 }

@@ -7,7 +7,9 @@ use std::path::PathBuf;
 
 fn get_wireshark_plugin_path() -> PathBuf {
     #[cfg(target_os = "windows")]
-    let mut dir = PathBuf::from(std::env::var("APPDATA").unwrap_or_else(|_| "C:\\Users\\kush\\AppData\\Roaming".into()));
+    let mut dir = PathBuf::from(
+        std::env::var("APPDATA").unwrap_or_else(|_| "C:\\Users\\kush\\AppData\\Roaming".into()),
+    );
     #[cfg(not(target_os = "windows"))]
     let mut dir = match std::env::var("HOME") {
         Ok(h) => PathBuf::from(h).join(".config"),
@@ -71,18 +73,35 @@ tcp_port:add(9876, ksp_proto)
     match fs::write(&path, lua_code) {
         Ok(_) => {
             if json {
-                println!("{}", serde_json::json!({"status": "installed", "plugin_path": path.display().to_string()}));
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "installed", "plugin_path": path.display().to_string()})
+                );
             } else {
                 ui::header("Wireshark Dissector Plugin Installation");
-                println!("  {} Successfully installed KSP Lua Dissector -> {}", "✔".green().bold(), path.display().to_string().white().bold());
-                println!("  {} Registered TCP and UDP port 9876 to `ksp_proto`.", "✔".green().bold());
-                println!("  {} Open Wireshark and use display filter `{}`.", "ℹ".blue(), "ksp".yellow().bold());
+                println!(
+                    "  {} Successfully installed KSP Lua Dissector -> {}",
+                    "✔".green().bold(),
+                    path.display().to_string().white().bold()
+                );
+                println!(
+                    "  {} Registered TCP and UDP port 9876 to `ksp_proto`.",
+                    "✔".green().bold()
+                );
+                println!(
+                    "  {} Open Wireshark and use display filter `{}`.",
+                    "ℹ".blue(),
+                    "ksp".yellow().bold()
+                );
                 println!();
             }
         }
         Err(e) => {
             if json {
-                println!("{}", serde_json::json!({"status": "error", "message": e.to_string()}));
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "error", "message": e.to_string()})
+                );
             } else {
                 ui::failure(&format!("Failed to write Wireshark plugin: {}", e));
             }
@@ -92,11 +111,18 @@ tcp_port:add(9876, ksp_proto)
 
 pub fn run_open(json: bool) {
     if json {
-        println!("{}", serde_json::json!({"status": "info", "message": "Launch wireshark with -Y ksp"}));
+        println!(
+            "{}",
+            serde_json::json!({"status": "info", "message": "Launch wireshark with -Y ksp"})
+        );
         return;
     }
     ui::header("Launching Wireshark");
-    println!("  {} To filter KSP traffic directly in Wireshark, use: {}", "ℹ".blue(), "wireshark -k -Y ksp -i loopback".yellow().bold());
+    println!(
+        "  {} To filter KSP traffic directly in Wireshark, use: {}",
+        "ℹ".blue(),
+        "wireshark -k -Y ksp -i loopback".yellow().bold()
+    );
     println!();
 }
 
@@ -106,7 +132,10 @@ pub fn run_uninstall(json: bool) {
     let _ = fs::remove_file(&path);
 
     if json {
-        println!("{}", serde_json::json!({"status": "uninstalled", "was_installed": existed}));
+        println!(
+            "{}",
+            serde_json::json!({"status": "uninstalled", "was_installed": existed})
+        );
         return;
     }
 

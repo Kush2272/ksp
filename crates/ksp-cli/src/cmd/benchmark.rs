@@ -1,9 +1,9 @@
 //! `ksp benchmark` — Cryptographic and protocol benchmarks.
 
-use colored::Colorize;
 use crate::ui;
-use std::time::{Duration, Instant};
+use colored::Colorize;
 use std::io::Write;
+use std::time::{Duration, Instant};
 
 pub fn run(stress: bool, csv: bool, markdown: bool, json: bool) {
     let start_suite = Instant::now();
@@ -29,22 +29,26 @@ pub fn run(stress: bool, csv: bool, markdown: bool, json: bool) {
     });
 
     if !json && !csv && !markdown {
-        print!("{}", "█████░░░░░░░░░░░░░░░░░░░░░ 16%\r  Running primitives...      █████".dimmed());
+        print!(
+            "{}",
+            "█████░░░░░░░░░░░░░░░░░░░░░ 16%\r  Running primitives...      █████".dimmed()
+        );
         let _ = std::io::stdout().flush();
     }
 
     // 2. Packet Serialization (Encode + Decode)
     let dur_ser = bench_exact(iterations_exact, || {
-        let pkt = ksp_core::KspPacket::new_handshake(
-            ksp_core::types::PacketType::Data,
-            vec![0u8; 1024],
-        );
+        let pkt =
+            ksp_core::KspPacket::new_handshake(ksp_core::types::PacketType::Data, vec![0u8; 1024]);
         let bytes = pkt.serialize();
         let _ = ksp_core::KspPacket::deserialize(&bytes).unwrap();
     });
 
     if !json && !csv && !markdown {
-        print!("{}", "██████████░░░░░░░░░░░░░░░░ 33%\r  Running primitives...      ██████████".dimmed());
+        print!(
+            "{}",
+            "██████████░░░░░░░░░░░░░░░░ 33%\r  Running primitives...      ██████████".dimmed()
+        );
         let _ = std::io::stdout().flush();
     }
 
@@ -54,13 +58,21 @@ pub fn run(stress: bool, csv: bool, markdown: bool, json: bool) {
         let nonce = [0x01u8; 12];
         let data = vec![0u8; 65536]; // 64 KB
         let _ = ksp_crypto::aead::encrypt(
-            ksp_core::capability::CipherSuite::Aes256Gcm, &key, &nonce, &data, b"aad",
-        ).unwrap();
+            ksp_core::capability::CipherSuite::Aes256Gcm,
+            &key,
+            &nonce,
+            &data,
+            b"aad",
+        )
+        .unwrap();
         65536
     });
 
     if !json && !csv && !markdown {
-        print!("{}", "███████████████░░░░░░░░░░░ 50%\r  Running primitives...      ███████████████".dimmed());
+        print!(
+            "{}",
+            "███████████████░░░░░░░░░░░ 50%\r  Running primitives...      ███████████████".dimmed()
+        );
         let _ = std::io::stdout().flush();
     }
 
@@ -70,13 +82,22 @@ pub fn run(stress: bool, csv: bool, markdown: bool, json: bool) {
         let nonce = [0x01u8; 12];
         let data = vec![0u8; 65536];
         let _ = ksp_crypto::aead::encrypt(
-            ksp_core::capability::CipherSuite::ChaCha20Poly1305, &key, &nonce, &data, b"aad",
-        ).unwrap();
+            ksp_core::capability::CipherSuite::ChaCha20Poly1305,
+            &key,
+            &nonce,
+            &data,
+            b"aad",
+        )
+        .unwrap();
         65536
     });
 
     if !json && !csv && !markdown {
-        print!("{}", "████████████████████░░░░░░ 66%\r  Running primitives...      ████████████████████".dimmed());
+        print!(
+            "{}",
+            "████████████████████░░░░░░ 66%\r  Running primitives...      ████████████████████"
+                .dimmed()
+        );
         let _ = std::io::stdout().flush();
     }
 
@@ -105,7 +126,11 @@ pub fn run(stress: bool, csv: bool, markdown: bool, json: bool) {
     let total_suite_dur = start_suite.elapsed();
 
     if !json && !csv && !markdown {
-        println!("\r  {:<26} {} 100%                 ", "Running primitives...".dimmed(), "██████████████████████████████".green());
+        println!(
+            "\r  {:<26} {} 100%                 ",
+            "Running primitives...".dimmed(),
+            "██████████████████████████████".green()
+        );
         println!();
     }
 
@@ -129,47 +154,122 @@ pub fn run(stress: bool, csv: bool, markdown: bool, json: bool) {
 
     if csv {
         println!("name,result,operation_type,raw_value");
-        println!("Handshake (Key Exchange),{},X25519 + HKDF + Auth,{}", ui::format_duration(dur_handshake), dur_handshake.as_nanos());
-        println!("Packet Encode + Decode,{},Serialization roundtrip,{}", ui::format_nanos(dur_ser.as_nanos() as u64), dur_ser.as_nanos());
-        println!("AES-256-GCM Encryption,{:.0} MB/s,64 KB blocks AEAD,{:.2}", aes_mbps, aes_mbps);
-        println!("ChaCha20-Poly1305 Encryption,{:.0} MB/s,64 KB blocks AEAD,{:.2}", chacha_mbps, chacha_mbps);
-        println!("Ed25519 Sign + Verify,{},Asymmetric digital signature,{}", ui::format_duration(dur_ed25519), dur_ed25519.as_nanos());
-        println!("HKDF-SHA256 Derivation,{},Session key expansion,{}", ui::format_nanos(dur_hkdf.as_nanos() as u64), dur_hkdf.as_nanos());
+        println!(
+            "Handshake (Key Exchange),{},X25519 + HKDF + Auth,{}",
+            ui::format_duration(dur_handshake),
+            dur_handshake.as_nanos()
+        );
+        println!(
+            "Packet Encode + Decode,{},Serialization roundtrip,{}",
+            ui::format_nanos(dur_ser.as_nanos() as u64),
+            dur_ser.as_nanos()
+        );
+        println!(
+            "AES-256-GCM Encryption,{:.0} MB/s,64 KB blocks AEAD,{:.2}",
+            aes_mbps, aes_mbps
+        );
+        println!(
+            "ChaCha20-Poly1305 Encryption,{:.0} MB/s,64 KB blocks AEAD,{:.2}",
+            chacha_mbps, chacha_mbps
+        );
+        println!(
+            "Ed25519 Sign + Verify,{},Asymmetric digital signature,{}",
+            ui::format_duration(dur_ed25519),
+            dur_ed25519.as_nanos()
+        );
+        println!(
+            "HKDF-SHA256 Derivation,{},Session key expansion,{}",
+            ui::format_nanos(dur_hkdf.as_nanos() as u64),
+            dur_hkdf.as_nanos()
+        );
         return;
     }
 
     if markdown {
         println!("| Benchmark Primitive | Result | Operation Details | Status |");
         println!("| :--- | :--- | :--- | :--- |");
-        println!("| **Handshake (Key Exchange)** | `{}` | X25519 + HKDF + Auth | ✔ EXCELLENT |", ui::format_duration(dur_handshake));
-        println!("| **Packet Encode + Decode** | `{}` | Serialization roundtrip | ✔ EXCELLENT |", ui::format_nanos(dur_ser.as_nanos() as u64));
-        println!("| **AES-256-GCM Encryption** | `{:.0} MB/s` | 64 KB blocks AEAD | ✔ EXCELLENT |", aes_mbps);
-        println!("| **ChaCha20-Poly1305 Encryption** | `{:.0} MB/s` | 64 KB blocks AEAD | ✔ EXCELLENT |", chacha_mbps);
-        println!("| **Ed25519 Sign + Verify** | `{}` | Asymmetric digital signature | ✔ EXCELLENT |", ui::format_duration(dur_ed25519));
-        println!("| **HKDF-SHA256 Derivation** | `{}` | Session key expansion | ✔ EXCELLENT |", ui::format_nanos(dur_hkdf.as_nanos() as u64));
+        println!(
+            "| **Handshake (Key Exchange)** | `{}` | X25519 + HKDF + Auth | ✔ EXCELLENT |",
+            ui::format_duration(dur_handshake)
+        );
+        println!(
+            "| **Packet Encode + Decode** | `{}` | Serialization roundtrip | ✔ EXCELLENT |",
+            ui::format_nanos(dur_ser.as_nanos() as u64)
+        );
+        println!(
+            "| **AES-256-GCM Encryption** | `{:.0} MB/s` | 64 KB blocks AEAD | ✔ EXCELLENT |",
+            aes_mbps
+        );
+        println!(
+            "| **ChaCha20-Poly1305 Encryption** | `{:.0} MB/s` | 64 KB blocks AEAD | ✔ EXCELLENT |",
+            chacha_mbps
+        );
+        println!(
+            "| **Ed25519 Sign + Verify** | `{}` | Asymmetric digital signature | ✔ EXCELLENT |",
+            ui::format_duration(dur_ed25519)
+        );
+        println!(
+            "| **HKDF-SHA256 Derivation** | `{}` | Session key expansion | ✔ EXCELLENT |",
+            ui::format_nanos(dur_hkdf.as_nanos() as u64)
+        );
         println!();
-        println!("*Total Suite Time: {}*", ui::format_duration(total_suite_dur));
+        println!(
+            "*Total Suite Time: {}*",
+            ui::format_duration(total_suite_dur)
+        );
         return;
     }
 
     // Criterion-style Console Suite Output
-    print_benchmark_item("Handshake (Key Exchange)", &ui::format_duration(dur_handshake), "X25519 + HKDF + Authentication");
-    print_benchmark_item("Packet Encode + Decode", &ui::format_nanos(dur_ser.as_nanos() as u64), "Serialization roundtrip");
-    print_benchmark_item("AES-256-GCM Encryption", &format!("{:.0} MB/s", aes_mbps), "64 KB blocks AEAD");
-    print_benchmark_item("ChaCha20-Poly1305 Encryption", &format!("{:.0} MB/s", chacha_mbps), "64 KB blocks AEAD");
-    print_benchmark_item("Ed25519 Sign + Verify", &ui::format_duration(dur_ed25519), "Asymmetric digital signature");
-    print_benchmark_item("HKDF-SHA256 Derivation", &ui::format_nanos(dur_hkdf.as_nanos() as u64), "Session key expansion");
+    print_benchmark_item(
+        "Handshake (Key Exchange)",
+        &ui::format_duration(dur_handshake),
+        "X25519 + HKDF + Authentication",
+    );
+    print_benchmark_item(
+        "Packet Encode + Decode",
+        &ui::format_nanos(dur_ser.as_nanos() as u64),
+        "Serialization roundtrip",
+    );
+    print_benchmark_item(
+        "AES-256-GCM Encryption",
+        &format!("{:.0} MB/s", aes_mbps),
+        "64 KB blocks AEAD",
+    );
+    print_benchmark_item(
+        "ChaCha20-Poly1305 Encryption",
+        &format!("{:.0} MB/s", chacha_mbps),
+        "64 KB blocks AEAD",
+    );
+    print_benchmark_item(
+        "Ed25519 Sign + Verify",
+        &ui::format_duration(dur_ed25519),
+        "Asymmetric digital signature",
+    );
+    print_benchmark_item(
+        "HKDF-SHA256 Derivation",
+        &ui::format_nanos(dur_hkdf.as_nanos() as u64),
+        "Session key expansion",
+    );
 
     if stress {
         run_stress(false);
     }
 
-    println!("  {}", "────────────────────────────────────────────────────────────".dimmed());
-    println!("  {} {} Completed in {}", 
-        "✔".green().bold(), 
+    println!(
+        "  {}",
+        "────────────────────────────────────────────────────────────".dimmed()
+    );
+    println!(
+        "  {} {} Completed in {}",
+        "✔".green().bold(),
         "6 Primitives Benchmarked:".white().bold(),
-        ui::format_duration(total_suite_dur).cyan().bold());
-    println!("  {}", "────────────────────────────────────────────────────────────".dimmed());
+        ui::format_duration(total_suite_dur).cyan().bold()
+    );
+    println!(
+        "  {}",
+        "────────────────────────────────────────────────────────────".dimmed()
+    );
     println!();
 
     print_environment_and_methodology();
@@ -183,42 +283,67 @@ fn print_benchmark_item(title: &str, result: &str, subtitle: &str) {
 
 fn print_environment_and_methodology() {
     let sys = sysinfo::System::new_all();
-    let cpu_brand = sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_else(|| "Unknown CPU".into());
+    let cpu_brand = sys
+        .cpus()
+        .first()
+        .map(|c| c.brand().to_string())
+        .unwrap_or_else(|| "Unknown CPU".into());
     let threads = sys.cpus().len();
     let total_mem_gb = sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0);
 
     #[cfg(target_arch = "x86_64")]
-    let aes_ni = if is_x86_feature_detected!("aes") { "Enabled" } else { "Disabled" };
+    let aes_ni = if is_x86_feature_detected!("aes") {
+        "Enabled"
+    } else {
+        "Disabled"
+    };
     #[cfg(not(target_arch = "x86_64"))]
     let aes_ni = "N/A";
 
     #[cfg(target_arch = "x86_64")]
-    let simd = if is_x86_feature_detected!("avx2") { "AVX2" } else { "Standard" };
+    let simd = if is_x86_feature_detected!("avx2") {
+        "AVX2"
+    } else {
+        "Standard"
+    };
     #[cfg(not(target_arch = "x86_64"))]
     let simd = "Standard";
 
     println!("  {}", "Environment".yellow().bold());
     println!();
     println!("    {:<16} {}", "CPU".dimmed(), cpu_brand.white());
-    println!("    {:<16} {}", "Threads".dimmed(), threads.to_string().cyan());
+    println!(
+        "    {:<16} {}",
+        "Threads".dimmed(),
+        threads.to_string().cyan()
+    );
     println!("    {:<16} {:.1} GB", "Memory".dimmed(), total_mem_gb);
     println!("    {:<16} {}", "AES-NI".dimmed(), aes_ni.green());
     println!("    {:<16} {}", "SIMD".dimmed(), simd.yellow());
-    println!("    {:<16} {}", "Rust".dimmed(), "1.96.1");
-    println!("    {:<16} {} {}", "Platform".dimmed(), std::env::consts::OS, std::env::consts::ARCH);
+    println!("    {:<16} 1.96.1", "Rust".dimmed());
+    println!(
+        "    {:<16} {} {}",
+        "Platform".dimmed(),
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
     println!();
     println!("  {}", "Methodology".yellow().bold());
     println!();
-    println!("    {:<16} {}", "Iterations".dimmed(), "100,000");
-    println!("    {:<16} {}", "Warmup".dimmed(), "3 s");
-    println!("    {:<16} {}", "Measurement".dimmed(), "10 s");
-    println!("    {:<16} {}", "Compiler Mode".dimmed(), "Release (O3 + LTO)");
+    println!("    {:<16} 100,000", "Iterations".dimmed());
+    println!("    {:<16} 3 s", "Warmup".dimmed());
+    println!("    {:<16} 10 s", "Measurement".dimmed());
+    println!("    {:<16} Release (O3 + LTO)", "Compiler Mode".dimmed());
     println!();
 }
 
 fn get_environment_json() -> serde_json::Value {
     let sys = sysinfo::System::new_all();
-    let cpu_brand = sys.cpus().first().map(|c| c.brand().to_string()).unwrap_or_else(|| "Unknown CPU".into());
+    let cpu_brand = sys
+        .cpus()
+        .first()
+        .map(|c| c.brand().to_string())
+        .unwrap_or_else(|| "Unknown CPU".into());
     let threads = sys.cpus().len();
     let total_mem_gb = sys.total_memory() as f64 / (1024.0 * 1024.0 * 1024.0);
 
@@ -228,7 +353,11 @@ fn get_environment_json() -> serde_json::Value {
     let aes_ni = false;
 
     #[cfg(target_arch = "x86_64")]
-    let simd = if is_x86_feature_detected!("avx2") { "AVX2" } else { "Standard" };
+    let simd = if is_x86_feature_detected!("avx2") {
+        "AVX2"
+    } else {
+        "Standard"
+    };
     #[cfg(not(target_arch = "x86_64"))]
     let simd = "Standard";
 
@@ -274,8 +403,13 @@ fn run_stress(json: bool) {
             nonce[4 + j] ^= seq_bytes[j];
         }
         let _ = ksp_crypto::aead::encrypt(
-            ksp_core::capability::CipherSuite::Aes256Gcm, &key, &nonce, &payload, &aad,
-        ).unwrap();
+            ksp_core::capability::CipherSuite::Aes256Gcm,
+            &key,
+            &nonce,
+            &payload,
+            &aad,
+        )
+        .unwrap();
         if let Some(ref pb) = pb {
             pb.inc(1);
         }
@@ -306,9 +440,13 @@ fn run_stress(json: bool) {
 
 /// Benchmark exact duration with nanosecond precision.
 fn bench_exact(iterations: u64, mut f: impl FnMut()) -> Duration {
-    for _ in 0..10 { f(); }
+    for _ in 0..10 {
+        f();
+    }
     let start = Instant::now();
-    for _ in 0..iterations { f(); }
+    for _ in 0..iterations {
+        f();
+    }
     let total_ns = start.elapsed().as_nanos();
     Duration::from_nanos((total_ns / iterations as u128).max(1) as u64)
 }
@@ -316,7 +454,9 @@ fn bench_exact(iterations: u64, mut f: impl FnMut()) -> Duration {
 /// Benchmark throughput (bytes/sec).
 fn bench_throughput(mut f: impl FnMut() -> usize) -> f64 {
     let iterations = 1000u64;
-    for _ in 0..10 { f(); }
+    for _ in 0..10 {
+        f();
+    }
     let start = Instant::now();
     let mut total_bytes = 0usize;
     for _ in 0..iterations {
@@ -325,4 +465,3 @@ fn bench_throughput(mut f: impl FnMut() -> usize) -> f64 {
     let elapsed = start.elapsed();
     total_bytes as f64 / elapsed.as_secs_f64() / (1024.0 * 1024.0)
 }
-

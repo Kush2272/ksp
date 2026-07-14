@@ -3,18 +3,22 @@
 //! Provides background local IPC queries (`status`, `sessions`, `metrics`, `logs`, `stop`)
 //! for `ksp dashboard`, `ksp logs`, `ksp metrics`, and session inspectors.
 
-use colored::Colorize;
+use crate::cmd::telemetry::{LogEntry, TelemetrySnapshot};
 use crate::ui;
-use crate::cmd::telemetry::{TelemetrySnapshot, LogEntry};
-use tokio::net::{TcpListener, TcpStream};
+use colored::Colorize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
 
 pub const DAEMON_IPC_PORT: u16 = 9899;
 
 pub fn run_start(verbose: bool, json: bool) {
     if !json {
         ui::print_header("KSP Daemon (Control Plane)");
-        println!("  {} Starting local IPC telemetry control plane on port {}...", "🔄".yellow(), DAEMON_IPC_PORT);
+        println!(
+            "  {} Starting local IPC telemetry control plane on port {}...",
+            "🔄".yellow(),
+            DAEMON_IPC_PORT
+        );
     }
 
     if verbose {
@@ -48,21 +52,18 @@ pub fn run_start(verbose: bool, json: bool) {
             println!("  {} Press Ctrl+C or send IPC stop command to shutdown.\n", "ℹ".blue());
         }
 
-        loop {
-            match listener.accept().await {
-                Ok((mut stream, addr)) => {
-                    tokio::spawn(async move {
-                        let _ = handle_ipc_request(&mut stream).await;
-                    });
-                    let _ = addr;
-                }
-                Err(_) => break,
-            }
+        while let Ok((mut stream, addr)) = listener.accept().await {
+            tokio::spawn(async move {
+                let _ = handle_ipc_request(&mut stream).await;
+            });
+            let _ = addr;
         }
     });
 }
 
-async fn handle_ipc_request(stream: &mut TcpStream) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn handle_ipc_request(
+    stream: &mut TcpStream,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let mut buf = [0u8; 4096];
     let n = stream.read(&mut buf).await?;
     if n == 0 {
@@ -83,26 +84,39 @@ async fn handle_ipc_request(stream: &mut TcpStream) -> Result<(), Box<dyn std::e
         }
         "sessions" => {
             let snap = TelemetrySnapshot::read();
-            serde_json::to_string(&serde_json::json!({"sessions": snap.sessions, "active_count": snap.active_sessions}))?
+            serde_json::to_string(
+                &serde_json::json!({"sessions": snap.sessions, "active_count": snap.active_sessions}),
+            )?
         }
         "metrics" => {
             let snap = TelemetrySnapshot::read();
             let mut prom = String::new();
-            prom.push_str("# HELP ksp_active_sessions Number of currently connected KSP client sessions\n");
+            prom.push_str(
+                "# HELP ksp_active_sessions Number of currently connected KSP client sessions\n",
+            );
             prom.push_str("# TYPE ksp_active_sessions gauge\n");
             prom.push_str(&format!("ksp_active_sessions {}\n", snap.active_sessions));
-            prom.push_str("# HELP ksp_total_bytes_sent Total payload bytes transmitted across all sessions\n");
+            prom.push_str(
+                "# HELP ksp_total_bytes_sent Total payload bytes transmitted across all sessions\n",
+            );
             prom.push_str("# TYPE ksp_total_bytes_sent counter\n");
             prom.push_str(&format!("ksp_total_bytes_sent {}\n", snap.total_bytes_sent));
-            prom.push_str("# HELP ksp_total_bytes_recv Total payload bytes received across all sessions\n");
+            prom.push_str(
+                "# HELP ksp_total_bytes_recv Total payload bytes received across all sessions\n",
+            );
             prom.push_str("# TYPE ksp_total_bytes_recv counter\n");
             prom.push_str(&format!("ksp_total_bytes_recv {}\n", snap.total_bytes_recv));
             prom.push_str("# HELP ksp_total_packets Total encrypted protocol packets processed\n");
             prom.push_str("# TYPE ksp_total_packets counter\n");
             prom.push_str(&format!("ksp_total_packets {}\n", snap.total_packets));
-            prom.push_str("# HELP ksp_replay_attempts_blocked Total sliding-window replay attacks dropped\n");
+            prom.push_str(
+                "# HELP ksp_replay_attempts_blocked Total sliding-window replay attacks dropped\n",
+            );
             prom.push_str("# TYPE ksp_replay_attempts_blocked counter\n");
-            prom.push_str(&format!("ksp_replay_attempts_blocked {}\n", snap.replay_attempts_blocked));
+            prom.push_str(&format!(
+                "ksp_replay_attempts_blocked {}\n",
+                snap.replay_attempts_blocked
+            ));
             prom
         }
         "logs" => {
@@ -147,7 +161,13 @@ pub fn run_status(json: bool) {
                     ui::kv("Active Sessions", &snap.active_sessions.to_string());
                     ui::kv("Active Streams", &snap.active_streams.to_string());
                     ui::kv("Total Packets", &snap.total_packets.to_string());
-                    ui::kv("Bytes Transferred", &format!("{} B sent / {} B recv", snap.total_bytes_sent, snap.total_bytes_recv));
+                    ui::kv(
+                        "Bytes Transferred",
+                        &format!(
+                            "{} B sent / {} B recv",
+                            snap.total_bytes_sent, snap.total_bytes_recv
+                        ),
+                    );
                     ui::kv("Replays Blocked", &snap.replay_attempts_blocked.to_string());
                     println!();
                 } else {
@@ -156,9 +176,13 @@ pub fn run_status(json: bool) {
             }
             Err(_) => {
                 if json {
-                    ui::json_output(&serde_json::json!({"running": false, "port": DAEMON_IPC_PORT}));
+                    ui::json_output(
+                        &serde_json::json!({"running": false, "port": DAEMON_IPC_PORT}),
+                    );
                 } else {
-                    ui::info("Daemon IPC control plane is OFFLINE (`127.0.0.1:9899` not listening)");
+                    ui::info(
+                        "Daemon IPC control plane is OFFLINE (`127.0.0.1:9899` not listening)",
+                    );
                     ui::info("Start background daemon with: ksp daemon start");
                 }
             }

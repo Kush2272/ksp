@@ -37,10 +37,21 @@ pub fn run_use(env: &str, json: bool) {
     let valid = ["local", "development", "staging", "production", "demo"];
     if !valid.contains(&env.to_lowercase().as_str()) {
         if json {
-            println!("{}", serde_json::json!({"error": "invalid_env", "allowed": valid}));
+            println!(
+                "{}",
+                serde_json::json!({"error": "invalid_env", "allowed": valid})
+            );
         } else {
-            println!("  {} Unknown environment '{}'", "✘".red().bold(), env.white());
-            println!("  {} Allowed environments: {}", "ℹ".blue(), valid.join(", ").yellow());
+            println!(
+                "  {} Unknown environment '{}'",
+                "✘".red().bold(),
+                env.white()
+            );
+            println!(
+                "  {} Allowed environments: {}",
+                "ℹ".blue(),
+                valid.join(", ").yellow()
+            );
         }
         return;
     }
@@ -55,10 +66,21 @@ pub fn run_use(env: &str, json: bool) {
     };
 
     if json {
-        println!("{}", serde_json::json!({"status": "switched", "env": env, "target_addr": target_addr}));
+        println!(
+            "{}",
+            serde_json::json!({"status": "switched", "env": env, "target_addr": target_addr})
+        );
     } else {
-        println!("  {} Switched active KSP target environment -> {}", "✔".green().bold(), env.white().bold());
-        println!("  {} Default connection target: {}", "└─▶".dimmed(), target_addr.cyan().bold());
+        println!(
+            "  {} Switched active KSP target environment -> {}",
+            "✔".green().bold(),
+            env.white().bold()
+        );
+        println!(
+            "  {} Default connection target: {}",
+            "└─▶".dimmed(),
+            target_addr.cyan().bold()
+        );
     }
     println!();
 }
@@ -67,9 +89,21 @@ pub fn run_list(json: bool) {
     let active = get_active_env();
     let envs = [
         ("local", "127.0.0.1:9876", "Local loopback dev server"),
-        ("demo", "demo.kspprotocol.dev:9876", "Public 24/7 demo server"),
-        ("staging", "staging.kspprotocol.dev:8443", "Pre-production testing environment"),
-        ("production", "ksp.kspprotocol.dev:443", "Live high-throughput cluster"),
+        (
+            "demo",
+            "demo.kspprotocol.dev:9876",
+            "Public 24/7 demo server",
+        ),
+        (
+            "staging",
+            "staging.kspprotocol.dev:8443",
+            "Pre-production testing environment",
+        ),
+        (
+            "production",
+            "ksp.kspprotocol.dev:443",
+            "Live high-throughput cluster",
+        ),
     ];
 
     if json {
@@ -83,11 +117,26 @@ pub fn run_list(json: bool) {
     ui::header("KSP Target Environments");
     for (name, addr, desc) in &envs {
         if *name == active {
-            println!("  {} {:<14} {:<28} {}", "✔".green().bold(), name.green().bold(), addr.cyan(), format!("({})", desc).dimmed());
+            println!(
+                "  {} {:<14} {:<28} {}",
+                "✔".green().bold(),
+                name.green().bold(),
+                addr.cyan(),
+                format!("({})", desc).dimmed()
+            );
         } else {
-            println!("  {} {:<14} {:<28} {}", " ".white(), name.white(), addr.dimmed(), format!("({})", desc).dimmed());
+            println!(
+                "  {} {:<14} {:<28} {}",
+                " ".white(),
+                name.white(),
+                addr.dimmed(),
+                format!("({})", desc).dimmed()
+            );
         }
     }
-    println!("  {}", "════════════════════════════════════════════════════════════".cyan());
+    println!(
+        "  {}",
+        "════════════════════════════════════════════════════════════".cyan()
+    );
     println!();
 }

@@ -1,7 +1,7 @@
 //! `ksp cert generate|inspect|verify` — Certificate management tools.
 
-use colored::Colorize;
 use crate::ui;
+use colored::Colorize;
 
 pub fn run_generate(subject: &str, days: u32, output: &str, json: bool) {
     if !json {
@@ -41,8 +41,14 @@ pub fn run_generate(subject: &str, days: u32, output: &str, json: bool) {
         ui::kv("Issuer", "self-signed");
         ui::kv("Validity", &format!("{} days", days));
         ui::kv("Algorithm", "Ed25519");
-        ui::kv("Serial", &uuid::Uuid::from_bytes(cert.serial_number).to_string());
-        ui::kv("Public Key", &hex::encode(&cert.public_key[..16]).to_string());
+        ui::kv(
+            "Serial",
+            &uuid::Uuid::from_bytes(cert.serial_number).to_string(),
+        );
+        ui::kv(
+            "Public Key",
+            &hex::encode(&cert.public_key[..16]).to_string(),
+        );
         ui::summary_ok("Certificate generated successfully!");
     }
 }
@@ -88,9 +94,22 @@ pub fn run_inspect(file: &str, json: bool) {
         t.add_row(vec!["Public Key", &hex::encode(&cert.public_key[..16])]);
         t.add_row(vec!["Not Before", &format_timestamp(cert.not_before)]);
         t.add_row(vec!["Not After", &format_timestamp(cert.not_after)]);
-        t.add_row(vec!["Serial", &uuid::Uuid::from_bytes(cert.serial_number).to_string()]);
-        t.add_row(vec!["Expired", &if cert.is_expired() { "Yes ✘".to_string() } else { "No ✔".to_string() }]);
-        t.add_row(vec!["Signature", &format!("{}...", &hex::encode(&cert.signature[..16]))]);
+        t.add_row(vec![
+            "Serial",
+            &uuid::Uuid::from_bytes(cert.serial_number).to_string(),
+        ]);
+        t.add_row(vec![
+            "Expired",
+            &if cert.is_expired() {
+                "Yes ✘".to_string()
+            } else {
+                "No ✔".to_string()
+            },
+        ]);
+        t.add_row(vec![
+            "Signature",
+            &format!("{}...", &hex::encode(&cert.signature[..16])),
+        ]);
         println!("{t}");
     }
 }
@@ -135,10 +154,13 @@ pub fn run_verify(file: &str, json: bool) {
     checks.push(("Full Validation", full_ok));
 
     if json {
-        let results: Vec<serde_json::Value> = checks.iter()
+        let results: Vec<serde_json::Value> = checks
+            .iter()
             .map(|(name, ok)| serde_json::json!({"check": name, "passed": ok}))
             .collect();
-        ui::json_output(&serde_json::json!({"status": if full_ok { "valid" } else { "invalid" }, "checks": results}));
+        ui::json_output(
+            &serde_json::json!({"status": if full_ok { "valid" } else { "invalid" }, "checks": results}),
+        );
     } else {
         for (name, ok) in &checks {
             if *ok {
@@ -189,4 +211,3 @@ pub fn run_renew(file: &str, days: u32, json: bool) {
     let prefix = file.trim_end_matches(".cert").trim_end_matches(".crt");
     run_generate(&cert.subject, days, prefix, json);
 }
-

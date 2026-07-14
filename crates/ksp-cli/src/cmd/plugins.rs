@@ -41,18 +41,17 @@ pub fn run_list(json: bool) {
     if let Ok(entries) = fs::read_dir(&user_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() {
-                if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
-                    if name.starts_with("ksp-") {
-                        let short_name = name.strip_prefix("ksp-").unwrap_or(name);
-                        plugins.push(PluginInfo {
-                            name: short_name.to_string(),
-                            path: path.display().to_string(),
-                            source: "User (~/.ksp/plugins)".to_string(),
-                            version: "v0.1.0 (local)".to_string(),
-                        });
-                    }
-                }
+            if path.is_file()
+                && let Some(name) = path.file_stem().and_then(|s| s.to_str())
+                && name.starts_with("ksp-")
+            {
+                let short_name = name.strip_prefix("ksp-").unwrap_or(name);
+                plugins.push(PluginInfo {
+                    name: short_name.to_string(),
+                    path: path.display().to_string(),
+                    source: "User (~/.ksp/plugins)".to_string(),
+                    version: "v0.1.0 (local)".to_string(),
+                });
             }
         }
     }
@@ -63,17 +62,19 @@ pub fn run_list(json: bool) {
             if let Ok(entries) = fs::read_dir(dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if let Some(name_str) = path.file_stem().and_then(|s| s.to_str()) {
-                        if name_str.starts_with("ksp-") && name_str != "ksp-cli" && name_str != "ksp-server" {
-                            let short = name_str.strip_prefix("ksp-").unwrap_or(name_str);
-                            if !plugins.iter().any(|p: &PluginInfo| p.name == short) {
-                                plugins.push(PluginInfo {
-                                    name: short.to_string(),
-                                    path: path.display().to_string(),
-                                    source: "System ($PATH)".to_string(),
-                                    version: "detected".to_string(),
-                                });
-                            }
+                    if let Some(name_str) = path.file_stem().and_then(|s| s.to_str())
+                        && name_str.starts_with("ksp-")
+                        && name_str != "ksp-cli"
+                        && name_str != "ksp-server"
+                    {
+                        let short = name_str.strip_prefix("ksp-").unwrap_or(name_str);
+                        if !plugins.iter().any(|p: &PluginInfo| p.name == short) {
+                            plugins.push(PluginInfo {
+                                name: short.to_string(),
+                                path: path.display().to_string(),
+                                source: "System ($PATH)".to_string(),
+                                version: "detected".to_string(),
+                            });
                         }
                     }
                 }
@@ -93,13 +94,30 @@ pub fn run_list(json: bool) {
 
     ui::print_header("KSP Installed External Plugins");
     if plugins.is_empty() {
-        println!("  {} No external `ksp-*` plugins detected in $PATH or {}", "ℹ".blue(), user_dir.display().to_string().dimmed());
-        println!("  {} Create executable scripts named `ksp-<plugin>` in $PATH or ~/.ksp/plugins/ to extend `ksp`.", "ℹ".blue());
+        println!(
+            "  {} No external `ksp-*` plugins detected in $PATH or {}",
+            "ℹ".blue(),
+            user_dir.display().to_string().dimmed()
+        );
+        println!(
+            "  {} Create executable scripts named `ksp-<plugin>` in $PATH or ~/.ksp/plugins/ to extend `ksp`.",
+            "ℹ".blue()
+        );
         println!();
     } else {
-        println!("  {} Found {} installed KSP plugin(s):\n", "✔".green().bold(), plugins.len());
+        println!(
+            "  {} Found {} installed KSP plugin(s):\n",
+            "✔".green().bold(),
+            plugins.len()
+        );
         for p in &plugins {
-            println!("  {} {:<18} {:<26} {}", "🧩".yellow(), p.name.cyan().bold(), p.source.dimmed(), p.path.white());
+            println!(
+                "  {} {:<18} {:<26} {}",
+                "🧩".yellow(),
+                p.name.cyan().bold(),
+                p.source.dimmed(),
+                p.path.white()
+            );
         }
         println!();
     }
@@ -108,7 +126,11 @@ pub fn run_list(json: bool) {
 pub fn run_install(url_or_path: &str, json: bool) {
     let plugins_dir = get_plugins_dir();
     let target_name = if url_or_path.contains('/') || url_or_path.contains('\\') {
-        PathBuf::from(url_or_path).file_name().and_then(|n| n.to_str()).unwrap_or("ksp-plugin").to_string()
+        PathBuf::from(url_or_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("ksp-plugin")
+            .to_string()
     } else if url_or_path.starts_with("ksp-") {
         url_or_path.to_string()
     } else {
@@ -121,12 +143,20 @@ pub fn run_install(url_or_path: &str, json: bool) {
     let src_path = PathBuf::from(url_or_path);
     if src_path.exists() && src_path.is_file() {
         if let Err(e) = fs::copy(&src_path, &target_path) {
-            if !json { ui::failure(&format!("Failed to install plugin from {}: {}", url_or_path, e)); }
+            if !json {
+                ui::failure(&format!(
+                    "Failed to install plugin from {}: {}",
+                    url_or_path, e
+                ));
+            }
             return;
         }
     } else {
         // Create standard shell script/wrapper template
-        let script = format!("#!/usr/bin/env bash\necho 'KSP Plugin \"{}\" v0.1.0 executed with args: $@'\n", target_name);
+        let script = format!(
+            "#!/usr/bin/env bash\necho 'KSP Plugin \"{}\" v0.1.0 executed with args: $@'\n",
+            target_name
+        );
         let _ = fs::write(&target_path, script);
         #[cfg(unix)]
         {
@@ -150,12 +180,24 @@ pub fn run_install(url_or_path: &str, json: bool) {
     ui::print_header("KSP Plugin Installed successfully");
     ui::kv("Plugin Name", &target_name);
     ui::kv("Install Path", &target_path.display().to_string());
-    println!("\n  {} Installed `{}` into local plugin directory.", "✔".green().bold(), target_name.cyan().bold());
-    println!("  {} Run `ksp plugins list` to view or `ksp {} --help` to execute.\n", "ℹ".blue(), target_name.strip_prefix("ksp-").unwrap_or(&target_name));
+    println!(
+        "\n  {} Installed `{}` into local plugin directory.",
+        "✔".green().bold(),
+        target_name.cyan().bold()
+    );
+    println!(
+        "  {} Run `ksp plugins list` to view or `ksp {} --help` to execute.\n",
+        "ℹ".blue(),
+        target_name.strip_prefix("ksp-").unwrap_or(&target_name)
+    );
 }
 
 pub fn run_remove(name: &str, json: bool) {
-    let full_name = if name.starts_with("ksp-") { name.to_string() } else { format!("ksp-{}", name) };
+    let full_name = if name.starts_with("ksp-") {
+        name.to_string()
+    } else {
+        format!("ksp-{}", name)
+    };
     let plugins_dir = get_plugins_dir();
     let target = plugins_dir.join(&full_name);
 
@@ -164,14 +206,22 @@ pub fn run_remove(name: &str, json: bool) {
         if json {
             ui::json_output(&serde_json::json!({"status": "removed", "plugin": full_name}));
         } else {
-            ui::success(&format!("Removed plugin {} from {}", full_name.cyan().bold(), plugins_dir.display()));
+            ui::success(&format!(
+                "Removed plugin {} from {}",
+                full_name.cyan().bold(),
+                plugins_dir.display()
+            ));
             println!();
         }
     } else {
         if json {
             ui::json_output(&serde_json::json!({"status": "not_found", "plugin": full_name}));
         } else {
-            ui::failure(&format!("Plugin '{}' not found in {}", full_name, plugins_dir.display()));
+            ui::failure(&format!(
+                "Plugin '{}' not found in {}",
+                full_name,
+                plugins_dir.display()
+            ));
             println!();
         }
     }

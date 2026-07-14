@@ -2,7 +2,7 @@
 
 use crate::ui;
 use clap::CommandFactory;
-use clap_complete::{generate, Shell};
+use clap_complete::{Shell, generate};
 use colored::Colorize;
 use std::io;
 
@@ -20,7 +20,10 @@ pub fn run(shell_str: &str, json: bool) {
                     "message": format!("Unsupported shell: '{}'. Supported: bash, zsh, fish, powershell, elvish", shell_str)
                 }));
             } else {
-                ui::failure(&format!("Unsupported shell: '{}'", shell_str.white().bold()));
+                ui::failure(&format!(
+                    "Unsupported shell: '{}'",
+                    shell_str.white().bold()
+                ));
                 println!("  Supported shells: bash, zsh, fish, powershell, elvish");
                 println!("  Example usage: `ksp completion zsh > ~/.zfunc/_ksp`\n");
             }

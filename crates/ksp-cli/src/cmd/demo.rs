@@ -1,7 +1,7 @@
 //! `ksp demo` — Automated end-to-end demonstration.
 
-use colored::Colorize;
 use crate::ui;
+use colored::Colorize;
 use std::time::Duration;
 
 pub fn run(json: bool) {
@@ -17,11 +17,15 @@ pub fn run(json: bool) {
 
     // Step 1: Certificate Generation
     step(1, "Generating Ed25519 Certificate", json);
-    let (cert, _key) = ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://demo", 365);
+    let (cert, _key) =
+        ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://demo", 365);
     if !json {
         ui::success(&format!("Certificate created: {}", cert.subject.cyan()));
         ui::kv("  Algorithm", "Ed25519");
-        ui::kv("  Serial", &uuid::Uuid::from_bytes(cert.serial_number).to_string());
+        ui::kv(
+            "  Serial",
+            &uuid::Uuid::from_bytes(cert.serial_number).to_string(),
+        );
         pause();
     }
 
@@ -29,11 +33,16 @@ pub fn run(json: bool) {
     step(2, "X25519 Ephemeral Key Exchange", json);
     let client_kp = ksp_crypto::x25519::EphemeralKeypair::generate();
     let server_kp = ksp_crypto::x25519::EphemeralKeypair::generate();
-    let shared = client_kp.diffie_hellman(&server_kp.public_key_bytes()).unwrap();
+    let shared = client_kp
+        .diffie_hellman(&server_kp.public_key_bytes())
+        .unwrap();
     if !json {
         ui::success("Client ephemeral key generated");
         ui::success("Server ephemeral key generated");
-        ui::success(&format!("Shared secret: {}...", hex::encode(&shared.as_bytes()[..8]).dimmed()));
+        ui::success(&format!(
+            "Shared secret: {}...",
+            hex::encode(&shared.as_bytes()[..8]).dimmed()
+        ));
         pause();
     }
 
@@ -44,10 +53,22 @@ pub fn run(json: bool) {
     let keys = ksp_crypto::kdf::derive_session_keys(shared.as_bytes(), &cr, &sr).unwrap();
     if !json {
         ui::success("4 session keys derived:");
-        ui::kv("  Client Write Key", &format!("{}...", hex::encode(&keys.client_write_key[..8])));
-        ui::kv("  Server Write Key", &format!("{}...", hex::encode(&keys.server_write_key[..8])));
-        ui::kv("  Client Write IV", &hex::encode(&keys.client_write_iv[..6]));
-        ui::kv("  Server Write IV", &hex::encode(&keys.server_write_iv[..6]));
+        ui::kv(
+            "  Client Write Key",
+            &format!("{}...", hex::encode(&keys.client_write_key[..8])),
+        );
+        ui::kv(
+            "  Server Write Key",
+            &format!("{}...", hex::encode(&keys.server_write_key[..8])),
+        );
+        ui::kv(
+            "  Client Write IV",
+            &hex::encode(&keys.client_write_iv[..6]),
+        );
+        ui::kv(
+            "  Server Write IV",
+            &hex::encode(&keys.server_write_iv[..6]),
+        );
         pause();
     }
 
@@ -58,12 +79,23 @@ pub fn run(json: bool) {
     let aad = [0u8; 48];
     let (ciphertext, tag) = ksp_crypto::aead::encrypt(
         ksp_core::capability::CipherSuite::Aes256Gcm,
-        &keys.client_write_key, &nonce, plaintext, &aad,
-    ).unwrap();
+        &keys.client_write_key,
+        &nonce,
+        plaintext,
+        &aad,
+    )
+    .unwrap();
     if !json {
-        ui::success(&format!("Plaintext:  \"{}\"", String::from_utf8_lossy(plaintext).green()));
-        ui::success(&format!("Ciphertext: {}... ({} bytes)", hex::encode(&ciphertext[..16]).red(), ciphertext.len()));
-        ui::success(&format!("AEAD Tag:   {}", hex::encode(&tag).yellow()));
+        ui::success(&format!(
+            "Plaintext:  \"{}\"",
+            String::from_utf8_lossy(plaintext).green()
+        ));
+        ui::success(&format!(
+            "Ciphertext: {}... ({} bytes)",
+            hex::encode(&ciphertext[..16]).red(),
+            ciphertext.len()
+        ));
+        ui::success(&format!("AEAD Tag:   {}", hex::encode(tag).yellow()));
         pause();
     }
 
@@ -71,10 +103,18 @@ pub fn run(json: bool) {
     step(5, "Decryption & Verification", json);
     let decrypted = ksp_crypto::aead::decrypt(
         ksp_core::capability::CipherSuite::Aes256Gcm,
-        &keys.client_write_key, &nonce, &ciphertext, &tag, &aad,
-    ).unwrap();
+        &keys.client_write_key,
+        &nonce,
+        &ciphertext,
+        &tag,
+        &aad,
+    )
+    .unwrap();
     if !json {
-        ui::success(&format!("Decrypted:  \"{}\"", String::from_utf8_lossy(&decrypted).green().bold()));
+        ui::success(&format!(
+            "Decrypted:  \"{}\"",
+            String::from_utf8_lossy(&decrypted).green().bold()
+        ));
         ui::success("AEAD tag verified — integrity confirmed");
         pause();
     }
@@ -92,23 +132,57 @@ pub fn run(json: bool) {
     }
     // Try replay
     match replay.check_and_update(2) {
-        Ok(()) => { if !json { ui::failure("Replay not detected (unexpected)"); } }
-        Err(e) => { if !json { ui::success(&format!("Replay seq=2 → {} {}", "REJECTED".red().bold(), format!("({})", e).dimmed())); } }
+        Ok(()) => {
+            if !json {
+                ui::failure("Replay not detected (unexpected)");
+            }
+        }
+        Err(e) => {
+            if !json {
+                ui::success(&format!(
+                    "Replay seq=2 → {} {}",
+                    "REJECTED".red().bold(),
+                    format!("({})", e).dimmed()
+                ));
+            }
+        }
     }
-    if !json { pause(); }
+    if !json {
+        pause();
+    }
 
     // Step 7: Tampered Packet
     step(7, "Tampered Packet Detection", json);
     let mut bad_ct = ciphertext.clone();
-    if !bad_ct.is_empty() { bad_ct[0] ^= 0xFF; }
+    if !bad_ct.is_empty() {
+        bad_ct[0] ^= 0xFF;
+    }
     match ksp_crypto::aead::decrypt(
         ksp_core::capability::CipherSuite::Aes256Gcm,
-        &keys.client_write_key, &nonce, &bad_ct, &tag, &aad,
+        &keys.client_write_key,
+        &nonce,
+        &bad_ct,
+        &tag,
+        &aad,
     ) {
-        Ok(_) => { if !json { ui::failure("Tampered packet accepted (unexpected)"); } }
-        Err(_) => { if !json { ui::success(&format!("Modified payload → {} {}", "AEAD VERIFICATION FAILED".red().bold(), "— packet dropped".dimmed())); } }
+        Ok(_) => {
+            if !json {
+                ui::failure("Tampered packet accepted (unexpected)");
+            }
+        }
+        Err(_) => {
+            if !json {
+                ui::success(&format!(
+                    "Modified payload → {} {}",
+                    "AEAD VERIFICATION FAILED".red().bold(),
+                    "— packet dropped".dimmed()
+                ));
+            }
+        }
     }
-    if !json { pause(); }
+    if !json {
+        pause();
+    }
 
     // Step 8: Packet Serialization
     step(8, "Packet Serialization", json);
@@ -120,7 +194,10 @@ pub fn run(json: bool) {
     let (deserialized, _) = ksp_core::KspPacket::deserialize(&wire).unwrap();
     if !json {
         ui::success(&format!("Serialized:   {} bytes on wire", wire.len()));
-        ui::success(&format!("Deserialized: {} payload bytes recovered", deserialized.payload.len()));
+        ui::success(&format!(
+            "Deserialized: {} payload bytes recovered",
+            deserialized.payload.len()
+        ));
         pause();
     }
 
@@ -134,7 +211,11 @@ pub fn run(json: bool) {
     } else {
         println!();
         println!("  {}", "═".repeat(60).cyan());
-        println!("  {}  {}", "✔".green().bold(), "Demo Complete!".green().bold());
+        println!(
+            "  {}  {}",
+            "✔".green().bold(),
+            "Demo Complete!".green().bold()
+        );
         println!("  {}", "═".repeat(60).cyan());
         println!();
         println!("  All core KSP features demonstrated:");
@@ -198,4 +279,3 @@ fn print_ascii_animation() {
     }
     println!();
 }
-

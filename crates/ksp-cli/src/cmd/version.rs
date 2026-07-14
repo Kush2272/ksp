@@ -16,7 +16,14 @@ pub fn run(verbose: u8, json: bool) {
             info["branch"] = serde_json::json!("main");
             info["built"] = serde_json::json!("2026-07-13");
             info["compiler"] = serde_json::json!("rustc 1.96.1");
-            info["features"] = serde_json::json!(["AES", "ChaCha20", "Replay", "Compression", "Streaming", "Gateway"]);
+            info["features"] = serde_json::json!([
+                "AES",
+                "ChaCha20",
+                "Replay",
+                "Compression",
+                "Streaming",
+                "Gateway"
+            ]);
         }
         ui::json_output(&info);
         return;
@@ -26,15 +33,24 @@ pub fn run(verbose: u8, json: bool) {
 
     ui::kv("CLI Version", &format!("v{}", env!("CARGO_PKG_VERSION")));
     ui::kv("Protocol", &format!("KSP v{}", ksp_core::CURRENT_VERSION));
-    
+
     if verbose > 0 {
         ui::kv("Commit", "7a91c21");
         ui::kv("Branch", "main");
         ui::kv("Built", "2026-07-13");
         ui::kv("Compiler", "rustc 1.96.1");
-        ui::kv("Platform", &format!("{} {}", std::env::consts::OS, std::env::consts::ARCH));
+        ui::kv(
+            "Platform",
+            &format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),
+        );
         println!();
-        println!("  {:<20} {}", "Features:".dimmed(), "AES, ChaCha20, Replay, Compression, Streaming, Gateway".green().bold());
+        println!(
+            "  {:<20} {}",
+            "Features:".dimmed(),
+            "AES, ChaCha20, Replay, Compression, Streaming, Gateway"
+                .green()
+                .bold()
+        );
     } else {
         ui::kv("Edition", "Rust 2024");
         ui::kv("License", "MIT");
@@ -43,4 +59,3 @@ pub fn run(verbose: u8, json: bool) {
     }
     println!();
 }
-

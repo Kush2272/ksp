@@ -1,6 +1,6 @@
 //! Shared IPC telemetry state (`ksp_telemetry.json`) across KSP server and CLI processes.
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
@@ -33,26 +33,29 @@ impl TelemetrySnapshot {
     }
 
     pub fn read() -> Self {
-        if let Ok(data) = fs::read_to_string(Self::path()) {
-            if let Ok(snap) = serde_json::from_str::<Self>(&data) {
-                return snap;
-            }
+        if let Ok(data) = fs::read_to_string(Self::path())
+            && let Ok(snap) = serde_json::from_str::<Self>(&data)
+        {
+            return snap;
         }
         Self::default()
     }
 
     /// Fetch the current telemetry snapshot from the active daemon via IPC, or fallback to disk/default.
     pub fn fetch_current() -> Self {
-        if let Ok(rt) = tokio::runtime::Runtime::new() {
-            if let Ok(mut stream) = rt.block_on(tokio::net::TcpStream::connect(format!("127.0.0.1:{}", crate::cmd::daemon::DAEMON_IPC_PORT))) {
-                use tokio::io::{AsyncReadExt, AsyncWriteExt};
-                let _ = rt.block_on(stream.write_all(b"{\"cmd\":\"status\"}\n"));
-                let mut resp_buf = Vec::new();
-                let _ = rt.block_on(stream.read_to_end(&mut resp_buf));
-                let resp_str = String::from_utf8_lossy(&resp_buf);
-                if let Ok(snap) = serde_json::from_str::<Self>(&resp_str) {
-                    return snap;
-                }
+        if let Ok(rt) = tokio::runtime::Runtime::new()
+            && let Ok(mut stream) = rt.block_on(tokio::net::TcpStream::connect(format!(
+                "127.0.0.1:{}",
+                crate::cmd::daemon::DAEMON_IPC_PORT
+            )))
+        {
+            use tokio::io::{AsyncReadExt, AsyncWriteExt};
+            let _ = rt.block_on(stream.write_all(b"{\"cmd\":\"status\"}\n"));
+            let mut resp_buf = Vec::new();
+            let _ = rt.block_on(stream.read_to_end(&mut resp_buf));
+            let resp_str = String::from_utf8_lossy(&resp_buf);
+            if let Ok(snap) = serde_json::from_str::<Self>(&resp_str) {
+                return snap;
             }
         }
         Self::read()
@@ -140,18 +143,21 @@ impl LogEntry {
             session_id: session_id.map(|s| s.to_string()),
             message: message.to_string(),
         };
-        if let Ok(json) = serde_json::to_string(&entry) {
-            if let Ok(mut file) = fs::OpenOptions::new()
+        if let Ok(json) = serde_json::to_string(&entry)
+            && let Ok(mut file) = fs::OpenOptions::new()
                 .create(true)
                 .append(true)
                 .open(Self::log_file_path())
-            {
-                let _ = writeln!(file, "{}", json);
-            }
+        {
+            let _ = writeln!(file, "{}", json);
         }
     }
 
-    pub fn query(filter_level: Option<&str>, filter_session: Option<&str>, limit: usize) -> Vec<LogEntry> {
+    pub fn query(
+        filter_level: Option<&str>,
+        filter_session: Option<&str>,
+        limit: usize,
+    ) -> Vec<LogEntry> {
         let path = Self::log_file_path();
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
@@ -161,10 +167,11 @@ impl LogEntry {
         let mut results = Vec::new();
         for line in content.lines().rev() {
             if let Ok(entry) = serde_json::from_str::<LogEntry>(line) {
-                if let Some(lvl) = filter_level {
-                    if entry.level != lvl.to_lowercase() && lvl.to_lowercase() != "all" {
-                        continue;
-                    }
+                if let Some(lvl) = filter_level
+                    && entry.level != lvl.to_lowercase()
+                    && lvl.to_lowercase() != "all"
+                {
+                    continue;
                 }
                 if let Some(sid) = filter_session {
                     if let Some(ref entry_sid) = entry.session_id {

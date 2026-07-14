@@ -1,8 +1,8 @@
 //! `ksp new <name>` — Create a new KSP project from template.
 
-use colored::Colorize;
-use crate::ui;
 use crate::config::KspConfig;
+use crate::ui;
+use colored::Colorize;
 use std::path::Path;
 
 pub fn run(name: &str, json: bool) {
@@ -14,7 +14,9 @@ pub fn run(name: &str, json: bool) {
 
     if project_dir.exists() {
         if json {
-            ui::json_output(&serde_json::json!({"status": "error", "message": "Directory already exists"}));
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": "Directory already exists"}),
+            );
         } else {
             ui::failure(&format!("Directory '{}' already exists.", name));
         }
@@ -25,7 +27,10 @@ pub fn run(name: &str, json: bool) {
         ("Creating project directory", create_dir(project_dir)),
         ("Creating ksp.toml", create_config(project_dir, name)),
         ("Creating certs/", create_certs(project_dir)),
-        ("Generating self-signed certificate", generate_cert(project_dir)),
+        (
+            "Generating self-signed certificate",
+            generate_cert(project_dir),
+        ),
         ("Creating src/main.rs", create_src(project_dir, name)),
         ("Creating examples/", create_examples(project_dir)),
         ("Creating README.md", create_readme(project_dir, name)),
@@ -35,10 +40,14 @@ pub fn run(name: &str, json: bool) {
     for (step, result) in &steps {
         match result {
             Ok(()) => {
-                if !json { ui::success(step); }
+                if !json {
+                    ui::success(step);
+                }
             }
             Err(e) => {
-                if !json { ui::failure(&format!("{}: {}", step, e)); }
+                if !json {
+                    ui::failure(&format!("{}: {}", step, e));
+                }
                 all_ok = false;
             }
         }
@@ -85,7 +94,8 @@ fn create_certs(dir: &Path) -> Result<(), String> {
 }
 
 fn generate_cert(dir: &Path) -> Result<(), String> {
-    let (cert, key) = ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://localhost", 365);
+    let (cert, key) =
+        ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://localhost", 365);
     std::fs::write(dir.join("certs/server.cert"), cert.serialize()).map_err(|e| e.to_string())?;
     std::fs::write(dir.join("certs/server.key"), key.to_bytes()).map_err(|e| e.to_string())?;
     Ok(())

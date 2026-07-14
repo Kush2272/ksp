@@ -4,9 +4,9 @@
 //! Kush Secure Protocol. Every command supports `--json` for machine-readable
 //! output and `-v`/`-vv`/`-vvv` for progressive verbosity.
 
-mod ui;
-mod config;
 mod cmd;
+mod config;
+mod ui;
 
 use clap::{Parser, Subcommand};
 
@@ -56,7 +56,6 @@ enum Commands {
     },
 
     /// System health check and diagnostics.
-
     Doctor {
         /// Automatically fix common issues.
         #[arg(long)]
@@ -90,7 +89,6 @@ enum Commands {
         target_http: String,
     },
 
-
     /// Manage the KSP server.
     Server {
         #[command(subcommand)]
@@ -105,7 +103,6 @@ enum Commands {
 
     /// Disconnect active KSP connection and clear session state.
     Disconnect,
-
 
     /// Ping a KSP server (handshake + RTT measurement).
     Ping {
@@ -130,7 +127,6 @@ enum Commands {
         #[command(subcommand)]
         action: WiresharkAction,
     },
-
 
     /// Run cryptographic benchmarks.
     Benchmark {
@@ -187,7 +183,6 @@ enum Commands {
     },
 
     /// Session management.
-
     Session {
         #[command(subcommand)]
         action: SessionAction,
@@ -221,7 +216,6 @@ enum Commands {
         #[arg(default_value = "")]
         query: String,
     },
-
 
     /// Run an interactive protocol demo.
     Demo,
@@ -262,14 +256,18 @@ enum Commands {
     InstallScript,
 
     /// Uninstall KSP CLI and clean up configuration files (`ksp uninstall` / `remove` / `delete`).
-    #[command(alias = "remove", alias = "delete", alias = "rm", alias = "unistall", alias = "purge")]
+    #[command(
+        alias = "remove",
+        alias = "delete",
+        alias = "rm",
+        alias = "unistall",
+        alias = "purge"
+    )]
     Uninstall {
         /// Force uninstallation without asking for interactive confirmation.
         #[arg(short = 'y', long)]
         force: bool,
     },
-
-
 
     /// Validate a KSP packet binary file.
     Validate {
@@ -324,7 +322,6 @@ enum Commands {
         #[arg(long)]
         demo: bool,
     },
-
 
     /// Trace a single packet across the entire KSP protocol stack.
     Trace {
@@ -392,7 +389,6 @@ enum Commands {
     Journey,
 }
 
-
 #[derive(Subcommand)]
 enum InspectAction {
     /// Inspect a session state.
@@ -411,7 +407,6 @@ enum InspectAction {
         file: String,
     },
 }
-
 
 #[derive(Subcommand)]
 enum ServerAction {
@@ -442,7 +437,6 @@ enum ServerAction {
     /// Hot-reload server configuration (`ksp.toml`).
     Reload,
 }
-
 
 #[derive(Subcommand)]
 enum PacketAction {
@@ -515,7 +509,6 @@ enum WiresharkAction {
     /// Remove KSP Lua Dissector plugin.
     Uninstall,
 }
-
 
 #[derive(Subcommand, Debug, Clone)]
 enum TransferAction {
@@ -590,7 +583,6 @@ enum ReplayAction {
     Simulate,
 }
 
-
 #[derive(Subcommand)]
 enum SessionAction {
     /// List active sessions.
@@ -612,7 +604,6 @@ enum SessionAction {
     },
 }
 
-
 #[derive(Subcommand)]
 enum StreamAction {
     /// List active streams.
@@ -627,7 +618,6 @@ enum StreamAction {
     /// Reset all stream flow control buffers and error windows.
     Reset,
 }
-
 
 #[derive(Subcommand)]
 enum ConfigAction {
@@ -706,7 +696,6 @@ enum PluginsAction {
     },
 }
 
-
 fn main() {
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
@@ -736,19 +725,20 @@ fn main() {
         _ => "trace",
     };
     if cli.verbose > 0 {
-        tracing_subscriber::fmt()
-            .with_env_filter(log_level)
-            .init();
+        tracing_subscriber::fmt().with_env_filter(log_level).init();
     }
 
     // Print banner on first use (not in JSON mode)
     if !cli.json {
         match &cli.command {
-            Commands::Version | Commands::Demo | Commands::About | Commands::Matrix | Commands::Coffee => {} // These print their own banner or output
+            Commands::Version
+            | Commands::Demo
+            | Commands::About
+            | Commands::Matrix
+            | Commands::Coffee => {} // These print their own banner or output
             _ => {}
         }
     }
-
 
     match cli.command {
         Commands::Version => cmd::version::run(cli.verbose, cli.json),
@@ -758,8 +748,10 @@ fn main() {
         Commands::Doctor { fix } => cmd::doctor::run(fix, cli.json),
         Commands::Diag { dump } => cmd::diag::run_diag(dump, cli.json),
         Commands::Proxy { listen, upstream } => cmd::proxy::run_proxy(&listen, &upstream, cli.json),
-        Commands::Gateway { listen, target_http } => cmd::proxy::run_gateway(&listen, &target_http, cli.json),
-
+        Commands::Gateway {
+            listen,
+            target_http,
+        } => cmd::proxy::run_gateway(&listen, &target_http, cli.json),
 
         Commands::Server { action } => match action {
             ServerAction::Start { port, host } => {
@@ -782,13 +774,17 @@ fn main() {
             PacketAction::Decode { file } => cmd::packet::run_decode(&file, cli.json),
             PacketAction::Build { output } => cmd::packet::run_build(&output, cli.json),
             PacketAction::Encode { output } => cmd::packet::run_encode(&output, cli.json),
-            PacketAction::Export { file, format } => cmd::packet::run_export(&file, &format, cli.json),
+            PacketAction::Export { file, format } => {
+                cmd::packet::run_export(&file, &format, cli.json)
+            }
             PacketAction::Visualize { file } => cmd::packet::run_visualize(&file, cli.json),
         },
         Commands::Capture { action } => match action {
             CaptureAction::Start { port } => cmd::capture::run_start(port, cli.json),
             CaptureAction::Stop => cmd::capture::run_stop(cli.json),
-            CaptureAction::Export { format, output } => cmd::capture::run_export(&format, &output, cli.json),
+            CaptureAction::Export { format, output } => {
+                cmd::capture::run_export(&format, &output, cli.json)
+            }
             CaptureAction::Live => cmd::capture::run_live(cli.json),
         },
         Commands::Wireshark { action } => match action {
@@ -796,7 +792,11 @@ fn main() {
             WiresharkAction::Open => cmd::wireshark::run_open(cli.json),
             WiresharkAction::Uninstall => cmd::wireshark::run_uninstall(cli.json),
         },
-        Commands::Benchmark { stress, csv, markdown } => cmd::benchmark::run(stress, csv, markdown, cli.json),
+        Commands::Benchmark {
+            stress,
+            csv,
+            markdown,
+        } => cmd::benchmark::run(stress, csv, markdown, cli.json),
 
         Commands::Chat { address } => cmd::chat::run(&address, cli.json),
         Commands::Transfer { action } => match action {
@@ -835,9 +835,11 @@ fn main() {
             cmd::transfer::run_receive(port, output.as_deref(), cli.json)
         }
         Commands::Cert { action } => match action {
-            CertAction::Generate { subject, days, output } => {
-                cmd::cert::run_generate(&subject, days, &output, cli.json)
-            }
+            CertAction::Generate {
+                subject,
+                days,
+                output,
+            } => cmd::cert::run_generate(&subject, days, &output, cli.json),
             CertAction::Inspect { file } => cmd::cert::run_inspect(&file, cli.json),
             CertAction::Verify { file } => cmd::cert::run_verify(&file, cli.json),
             CertAction::Renew { file, days } => cmd::cert::run_renew(&file, days, cli.json),
@@ -888,7 +890,6 @@ fn main() {
         Commands::Uninstall { force } => cmd::dist::run_uninstall(force, cli.json),
         Commands::Validate { file } => cmd::validate::run(&file, cli.json),
 
-
         Commands::Info => cmd::info::run(cli.json),
         Commands::Playground => cmd::playground::run(cli.json),
         Commands::Docs { topic } => cmd::docs::run(topic.as_deref(), cli.json),
@@ -904,7 +905,6 @@ fn main() {
 
         Commands::Dashboard { demo } => cmd::dashboard::run_dashboard(demo, cli.json),
         Commands::Stats { demo } => cmd::stats::run(demo, cli.json),
-
 
         Commands::Trace { message } => cmd::trace::run(message.as_deref(), cli.json),
         Commands::Inspect { action } => match action {
@@ -923,12 +923,19 @@ fn main() {
             DaemonAction::Stop => cmd::daemon::run_stop(cli.json),
             DaemonAction::Status => cmd::daemon::run_status(cli.json),
         },
-        Commands::Logs { follow, level, session, lines } => {
-            cmd::logs::run(follow, cli.json, level.as_deref(), session.as_deref(), lines)
-        }
+        Commands::Logs {
+            follow,
+            level,
+            session,
+            lines,
+        } => cmd::logs::run(
+            follow,
+            cli.json,
+            level.as_deref(),
+            session.as_deref(),
+            lines,
+        ),
         Commands::Metrics { listen } => cmd::metrics::run(listen.as_deref(), cli.json),
         Commands::Journey => cmd::easter_eggs::run_journey(cli.json),
     }
-
 }
-

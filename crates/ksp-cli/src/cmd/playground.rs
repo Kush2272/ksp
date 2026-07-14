@@ -1,7 +1,7 @@
 //! `ksp playground` — Launch interactive KSP explorer.
 
-use colored::Colorize;
 use crate::ui;
+use colored::Colorize;
 
 pub fn run(json: bool) {
     if !json {

@@ -11,9 +11,9 @@
 //! - Actionable Diagnosis Cards (`Problem`, `Impact`, `Fix`, `Automatic Fix`) for failures and warnings.
 //! - Strict `--fix` correctness: statuses reflect actual file write outcomes.
 
-use colored::Colorize;
 use crate::ui;
-use std::net::{TcpListener, UdpSocket, ToSocketAddrs};
+use colored::Colorize;
+use std::net::{TcpListener, ToSocketAddrs, UdpSocket};
 use std::time::{Duration, Instant, SystemTime};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -50,6 +50,7 @@ impl Diagnostic {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn fail(
         name: &str,
         severity: Severity,
@@ -78,7 +79,10 @@ pub fn run(fix: bool, json: bool) {
     let start_time = Instant::now();
     if !json {
         ui::print_header("KSP Doctor — System Diagnostics & Netcheck Parity");
-        println!("  {} Auditing platform, network, crypto engine & configuration...", "⌛".cyan());
+        println!(
+            "  {} Auditing platform, network, crypto engine & configuration...",
+            "⌛".cyan()
+        );
         println!();
     }
 
@@ -115,18 +119,29 @@ pub fn run(fix: bool, json: bool) {
     }
 
     // ── 2. Platform & OS Environment ──
-    let os_name = sysinfo::System::long_os_version().unwrap_or_else(|| std::env::consts::OS.to_string());
+    let os_name =
+        sysinfo::System::long_os_version().unwrap_or_else(|| std::env::consts::OS.to_string());
     checks.push(Diagnostic::pass(
         "Platform & OS",
         5,
-        &format!("{} | Arch: {} | Little Endian | Target: {}-{}", os_name, std::env::consts::ARCH, std::env::consts::ARCH, std::env::consts::OS),
+        &format!(
+            "{} | Arch: {} | Little Endian | Target: {}-{}",
+            os_name,
+            std::env::consts::ARCH,
+            std::env::consts::ARCH,
+            std::env::consts::OS
+        ),
     ));
 
     // ── 3. CPU Topology & Hardware Acceleration ──
     let sys = sysinfo::System::new_all();
-    let cpu_brand = sys.cpus().first().map(|c| c.brand().trim().to_string()).unwrap_or_else(|| "Unknown CPU".to_string());
+    let cpu_brand = sys
+        .cpus()
+        .first()
+        .map(|c| c.brand().trim().to_string())
+        .unwrap_or_else(|| "Unknown CPU".to_string());
     let logical_threads = sys.cpus().len();
-    
+
     #[cfg(target_arch = "x86_64")]
     let aes_ni = is_x86_feature_detected!("aes");
     #[cfg(not(target_arch = "x86_64"))]
@@ -169,7 +184,11 @@ pub fn run(fix: bool, json: bool) {
     // ── 5. Network Stack & Reachability ──
     let ipv4_ok = UdpSocket::bind("127.0.0.1:0").is_ok();
     if ipv4_ok {
-        checks.push(Diagnostic::pass("IPv4 Network Stack", 5, "Active — loopback sockets binding"));
+        checks.push(Diagnostic::pass(
+            "IPv4 Network Stack",
+            5,
+            "Active — loopback sockets binding",
+        ));
     } else {
         checks.push(Diagnostic::fail(
             "IPv4 Network Stack",
@@ -185,7 +204,11 @@ pub fn run(fix: bool, json: bool) {
 
     let ipv6_ok = UdpSocket::bind("[::1]:0").is_ok();
     if ipv6_ok {
-        checks.push(Diagnostic::pass("IPv6 Dual-Stack Support", 5, "Active (`[::1]` socket bind OK)"));
+        checks.push(Diagnostic::pass(
+            "IPv6 Dual-Stack Support",
+            5,
+            "Active (`[::1]` socket bind OK)",
+        ));
     } else {
         checks.push(Diagnostic::fail(
             "IPv6 Dual-Stack Support",
@@ -203,27 +226,42 @@ pub fn run(fix: bool, json: bool) {
     checks.push(Diagnostic::pass(
         "DNS Resolution (`localhost`)",
         5,
-        if dns_ok { "Resolved successfully to local addresses" } else { "Resolution fallback active" },
+        if dns_ok {
+            "Resolved successfully to local addresses"
+        } else {
+            "Resolution fallback active"
+        },
     ));
 
     let mtu_ok = match UdpSocket::bind("127.0.0.1:0") {
         Ok(sock) => {
             let _ = sock.set_write_timeout(Some(Duration::from_millis(50)));
-            sock.send_to(&[0u8; 1400], "127.0.0.1:9876").is_ok() || true
+            let _ = sock.send_to(&[0u8; 1400], "127.0.0.1:9876");
+            true
         }
         Err(_) => false,
     };
     checks.push(Diagnostic::pass(
         "MTU Clamping (1400 B)",
         5,
-        if mtu_ok { "Verified — standard 1400-byte KSP frames pass unfragmented" } else { "MTU warning detected" },
+        if mtu_ok {
+            "Verified — standard 1400-byte KSP frames pass unfragmented"
+        } else {
+            "MTU warning detected"
+        },
     ));
 
-    let clock_ok = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).is_ok();
+    let clock_ok = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .is_ok();
     checks.push(Diagnostic::pass(
         "Clock Monotonicity & Skew",
         5,
-        if clock_ok { "Synchronized — UNIX timestamp valid for certificates & replay prevention" } else { "Clock skew error" },
+        if clock_ok {
+            "Synchronized — UNIX timestamp valid for certificates & replay prevention"
+        } else {
+            "Clock skew error"
+        },
     ));
 
     // ── 6. Replay Protection Window Health ──
@@ -255,14 +293,18 @@ pub fn run(fix: bool, json: bool) {
     let mut config_exists = config_path_opt.is_some();
     let mut config_generated_successfully = false;
 
-    if !config_exists && fix {
-        if let Ok(cwd) = std::env::current_dir() {
-            let cfg = crate::config::KspConfig::default();
-            if std::fs::write(cwd.join("ksp.toml"), cfg.to_toml()).is_ok() {
-                config_generated_successfully = true;
-                config_exists = true;
-                fixes_applied.push("Created default valid `ksp.toml` configuration file in current directory".to_string());
-            }
+    if !config_exists
+        && fix
+        && let Ok(cwd) = std::env::current_dir()
+    {
+        let cfg = crate::config::KspConfig::default();
+        if std::fs::write(cwd.join("ksp.toml"), cfg.to_toml()).is_ok() {
+            config_generated_successfully = true;
+            config_exists = true;
+            fixes_applied.push(
+                "Created default valid `ksp.toml` configuration file in current directory"
+                    .to_string(),
+            );
         }
     }
 
@@ -275,7 +317,12 @@ pub fn run(fix: bool, json: bool) {
                     checks.push(Diagnostic::pass(
                         "Config Validation (`ksp.toml`)",
                         10,
-                        &format!("✔ Valid syntax ({}) — port {}, cipher {}", path.display(), cfg.server.port, cfg.security.cipher),
+                        &format!(
+                            "✔ Valid syntax ({}) — port {}, cipher {}",
+                            path.display(),
+                            cfg.server.port,
+                            cfg.security.cipher
+                        ),
                     ));
                 }
                 Err(e) => {
@@ -325,7 +372,8 @@ pub fn run(fix: bool, json: bool) {
 
     if !cert_exists && fix {
         let _ = std::fs::create_dir_all("certs");
-        let (cert, key) = ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://localhost", 365);
+        let (cert, key) =
+            ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://localhost", 365);
         if std::fs::write("certs/server.cert", cert.serialize()).is_ok()
             && std::fs::write("certs/server.key", key.to_bytes()).is_ok()
         {
@@ -342,20 +390,29 @@ pub fn run(fix: bool, json: bool) {
         if let Ok(bytes) = std::fs::read(path_str) {
             match ksp_crypto::certificate::KspCertificate::deserialize(&bytes) {
                 Ok(cert) => {
-                    let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap_or_default().as_secs();
+                    let now = SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .unwrap_or_default()
+                        .as_secs();
                     if cert.not_after > now {
                         let remaining_days = (cert.not_after - now) / 86400;
                         checks.push(Diagnostic::pass(
                             "Certificate Inspection",
                             15,
-                            &format!("Subject: {} | Issuer: {} | Valid: Yes ({} days remaining)", cert.subject, cert.issuer, remaining_days),
+                            &format!(
+                                "Subject: {} | Issuer: {} | Valid: Yes ({} days remaining)",
+                                cert.subject, cert.issuer, remaining_days
+                            ),
                         ));
                     } else {
                         checks.push(Diagnostic::fail(
                             "Certificate Inspection",
                             Severity::Error,
                             15,
-                            &format!("Subject: {} | Status: EXPIRED on timestamp {}", cert.subject, cert.not_after),
+                            &format!(
+                                "Subject: {} | Status: EXPIRED on timestamp {}",
+                                cert.subject, cert.not_after
+                            ),
                             "Installed certificate has expired",
                             "Authenticated handshakes will be rejected by peers.",
                             "ksp cert renew or ksp cert generate",
@@ -400,13 +457,25 @@ pub fn run(fix: bool, json: bool) {
     let dur_aes = bench_micro(|| {
         let key = [0x42u8; 32];
         let nonce = [0x01u8; 12];
-        let _ = ksp_crypto::aead::encrypt(ksp_core::capability::CipherSuite::Aes256Gcm, &key, &nonce, b"ksp-micro-test", b"aad");
+        let _ = ksp_crypto::aead::encrypt(
+            ksp_core::capability::CipherSuite::Aes256Gcm,
+            &key,
+            &nonce,
+            b"ksp-micro-test",
+            b"aad",
+        );
     });
 
     let dur_chacha = bench_micro(|| {
         let key = [0x42u8; 32];
         let nonce = [0x01u8; 12];
-        let _ = ksp_crypto::aead::encrypt(ksp_core::capability::CipherSuite::ChaCha20Poly1305, &key, &nonce, b"ksp-micro-test", b"aad");
+        let _ = ksp_crypto::aead::encrypt(
+            ksp_core::capability::CipherSuite::ChaCha20Poly1305,
+            &key,
+            &nonce,
+            b"ksp-micro-test",
+            b"aad",
+        );
     });
 
     let dur_x25519 = bench_micro(|| {
@@ -433,31 +502,42 @@ pub fn run(fix: bool, json: bool) {
         format_micro(dur_ed25519),
         format_micro(dur_hkdf)
     );
-    checks.push(Diagnostic::pass("Crypto Primitives Bench", 15, &crypto_detail));
+    checks.push(Diagnostic::pass(
+        "Crypto Primitives Bench",
+        15,
+        &crypto_detail,
+    ));
 
     let elapsed = start_time.elapsed();
 
     // ── Output Processing ──
     if json {
         let total_weight: u32 = checks.iter().map(|c| c.score_weight).sum();
-        let earned: u32 = checks.iter().filter(|c| c.passed).map(|c| c.score_weight).sum();
-        let health_score = if total_weight > 0 { (earned * 100) / total_weight } else { 100 };
+        let earned: u32 = checks
+            .iter()
+            .filter(|c| c.passed)
+            .map(|c| c.score_weight)
+            .sum();
+        let health_score = (earned * 100).checked_div(total_weight).unwrap_or(100);
 
-        let items: Vec<serde_json::Value> = checks.iter().map(|c| {
-            serde_json::json!({
-                "name": c.name,
-                "severity": match c.severity {
-                    Severity::Info => "info",
-                    Severity::Warning => "warning",
-                    Severity::Error => "error",
-                },
-                "passed": c.passed,
-                "detail": c.detail,
-                "problem": c.problem,
-                "impact": c.impact,
-                "fix_cmd": c.fix_cmd,
+        let items: Vec<serde_json::Value> = checks
+            .iter()
+            .map(|c| {
+                serde_json::json!({
+                    "name": c.name,
+                    "severity": match c.severity {
+                        Severity::Info => "info",
+                        Severity::Warning => "warning",
+                        Severity::Error => "error",
+                    },
+                    "passed": c.passed,
+                    "detail": c.detail,
+                    "problem": c.problem,
+                    "impact": c.impact,
+                    "fix_cmd": c.fix_cmd,
+                })
             })
-        }).collect();
+            .collect();
 
         ui::json_output(&serde_json::json!({
             "status": if checks.iter().all(|c| c.passed) { "healthy" } else { "issues_detected" },
@@ -472,21 +552,38 @@ pub fn run(fix: bool, json: bool) {
     // Print rows
     for c in &checks {
         let sev_label = match c.severity {
-            Severity::Info => if c.passed { "✔ [INFO]".green().bold() } else { "ℹ [INFO]".cyan().bold() },
+            Severity::Info => {
+                if c.passed {
+                    "✔ [INFO]".green().bold()
+                } else {
+                    "ℹ [INFO]".cyan().bold()
+                }
+            }
             Severity::Warning => "⚠ [WARN]".yellow().bold(),
             Severity::Error => "✘ [ERROR]".red().bold(),
         };
-        println!("  {} {:<28} {}", sev_label, c.name.white().bold(), c.detail.dimmed());
+        println!(
+            "  {} {:<28} {}",
+            sev_label,
+            c.name.white().bold(),
+            c.detail.dimmed()
+        );
     }
 
     // Print Diagnosis Cards for failures/warnings
-    let issues: Vec<&Diagnostic> = checks.iter().filter(|c| !c.passed || c.problem.is_some()).collect();
+    let issues: Vec<&Diagnostic> = checks
+        .iter()
+        .filter(|c| !c.passed || c.problem.is_some())
+        .collect();
     if !issues.is_empty() {
         println!();
         ui::print_section("Actionable Diagnosis Cards");
         for issue in issues {
             let problem = issue.problem.as_deref().unwrap_or("Diagnostic anomaly");
-            let impact = issue.impact.as_deref().unwrap_or("May degrade protocol efficiency or security.");
+            let impact = issue
+                .impact
+                .as_deref()
+                .unwrap_or("May degrade protocol efficiency or security.");
             let fix = issue.fix_cmd.as_deref().unwrap_or("ksp doctor --fix");
             let auto_fix = if issue.auto_fix_available {
                 "Available (`ksp doctor --fix`)".green().bold().to_string()
@@ -494,12 +591,20 @@ pub fn run(fix: bool, json: bool) {
                 "Manual intervention required".yellow().to_string()
             };
 
-            println!("  ┌─ {} {} ──", "DIAGNOSIS:".red().bold(), issue.name.white().bold());
+            println!(
+                "  ┌─ {} {} ──",
+                "DIAGNOSIS:".red().bold(),
+                issue.name.white().bold()
+            );
             println!("  │ {:<14} {}", "Problem:".yellow().bold(), problem.white());
             println!("  │ {:<14} {}", "Impact:".yellow().bold(), impact.dimmed());
             println!("  │ {:<14} {}", "Fix:".cyan().bold(), fix.green().bold());
             println!("  │ {:<14} {}", "Auto-Fix:".magenta().bold(), auto_fix);
-            println!("  └{}", "─────────────────────────────────────────────────────────────────────────".dimmed());
+            println!(
+                "  └{}",
+                "─────────────────────────────────────────────────────────────────────────"
+                    .dimmed()
+            );
             println!();
         }
     }
@@ -514,11 +619,19 @@ pub fn run(fix: bool, json: bool) {
 
     // Calculate Health Score
     let total_weight: u32 = checks.iter().map(|c| c.score_weight).sum();
-    let earned: u32 = checks.iter().filter(|c| c.passed).map(|c| c.score_weight).sum();
-    let health_score = if total_weight > 0 { (earned * 100) / total_weight } else { 100 };
+    let earned: u32 = checks
+        .iter()
+        .filter(|c| c.passed)
+        .map(|c| c.score_weight)
+        .sum();
+    let health_score = (earned * 100).checked_div(total_weight).unwrap_or(100);
 
     println!();
-    println!("  {} {}", "Doctor completed in".dimmed(), format!("{} ms", elapsed.as_millis()).cyan().bold());
+    println!(
+        "  {} {}",
+        "Doctor completed in".dimmed(),
+        format!("{} ms", elapsed.as_millis()).cyan().bold()
+    );
 
     let score_str = format!("{}/100", health_score);
     let colored_score = if health_score >= 90 {
@@ -529,7 +642,11 @@ pub fn run(fix: bool, json: bool) {
         score_str.red().bold()
     };
 
-    println!("  {} {}", "Platform Health Score:".bold().white(), colored_score);
+    println!(
+        "  {} {}",
+        "Platform Health Score:".bold().white(),
+        colored_score
+    );
 
     if checks.iter().all(|c| c.passed) {
         ui::summary_ok("All system checks passed — KSP engineering environment is 100% ready!");
@@ -544,9 +661,13 @@ pub fn run(fix: bool, json: bool) {
 
 /// Benchmark microsecond-level execution of a single closure across 100 iterations.
 fn bench_micro(mut f: impl FnMut()) -> Duration {
-    for _ in 0..5 { f(); }
+    for _ in 0..5 {
+        f();
+    }
     let start = Instant::now();
-    for _ in 0..100 { f(); }
+    for _ in 0..100 {
+        f();
+    }
     let total = start.elapsed();
     Duration::from_nanos((total.as_nanos() / 100) as u64)
 }

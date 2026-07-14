@@ -1,10 +1,10 @@
 //! `ksp connect <address>` — Connect to a KSP server interactively.
 
-use colored::Colorize;
 use crate::ui;
-use std::net::SocketAddr;
+use colored::Colorize;
 use ksp_client::KspClient;
 use ksp_core::types::PacketType;
+use std::net::SocketAddr;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
 pub fn run(address: &str, json: bool) {
@@ -14,13 +14,21 @@ pub fn run(address: &str, json: bool) {
 
     let addr_str = crate::cmd::env::resolve_target_address(address);
 
-    let addr: SocketAddr = match std::net::ToSocketAddrs::to_socket_addrs(&addr_str).ok().and_then(|mut i| i.next()) {
+    let addr: SocketAddr = match std::net::ToSocketAddrs::to_socket_addrs(&addr_str)
+        .ok()
+        .and_then(|mut i| i.next())
+    {
         Some(a) => a,
         None => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": format!("Invalid or unresolvable address syntax: '{}'", addr_str)}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": format!("Invalid or unresolvable address syntax: '{}'", addr_str)}),
+                );
             } else {
-                ui::failure(&format!("Invalid or unresolvable socket address '{}'.\n  💡 Tip: Provide an IP:PORT (e.g. `127.0.0.1:9876`), or run `ksp chat new` to start a local server.", addr_str));
+                ui::failure(&format!(
+                    "Invalid or unresolvable socket address '{}'.\n  💡 Tip: Provide an IP:PORT (e.g. `127.0.0.1:9876`), or run `ksp chat new` to start a local server.",
+                    addr_str
+                ));
             }
             return;
         }
@@ -38,17 +46,32 @@ pub fn run(address: &str, json: bool) {
 }
 
 async fn connect_async(addr: SocketAddr, json: bool) {
-    let spin = if !json { Some(ui::spinner("Connecting & performing KSP handshake...")) } else { None };
+    let spin = if !json {
+        Some(ui::spinner("Connecting & performing KSP handshake..."))
+    } else {
+        None
+    };
 
     let mut client = match KspClient::connect(addr).await {
         Ok(c) => {
-            if let Some(sp) = spin { sp.finish_and_clear(); }
-            crate::cmd::telemetry::TelemetrySnapshot::record_connection(&c.session.id_string(), &format!("{}", c.cipher_suite));
-            crate::cmd::telemetry::LogEntry::record("info", Some(&c.session.id_string()), &format!("Interactive session established with peer {}", addr));
+            if let Some(sp) = spin {
+                sp.finish_and_clear();
+            }
+            crate::cmd::telemetry::TelemetrySnapshot::record_connection(
+                &c.session.id_string(),
+                &format!("{}", c.cipher_suite),
+            );
+            crate::cmd::telemetry::LogEntry::record(
+                "info",
+                Some(&c.session.id_string()),
+                &format!("Interactive session established with peer {}", addr),
+            );
             c
         }
         Err(e) => {
-            if let Some(sp) = spin { sp.finish_and_clear(); }
+            if let Some(sp) = spin {
+                sp.finish_and_clear();
+            }
             if json {
                 ui::json_output(&serde_json::json!({"status": "error", "message": e.to_string()}));
             } else {
@@ -94,12 +117,17 @@ async fn connect_async(addr: SocketAddr, json: bool) {
             ui::failure(&format!("Send failed: {}", e));
             break;
         }
-        let _ = crate::cmd::capture::append_packet_to_pcap(&ksp_core::packet::KspPacket::new_handshake(PacketType::Data, line.as_bytes().to_vec()).serialize());
+        let _ = crate::cmd::capture::append_packet_to_pcap(
+            &ksp_core::packet::KspPacket::new_handshake(PacketType::Data, line.as_bytes().to_vec())
+                .serialize(),
+        );
 
         match client.receive_packet().await {
             Ok((packet, plaintext)) => {
                 let _ = crate::cmd::capture::append_packet_to_pcap(&packet.serialize());
-                if packet.packet_type == PacketType::Data || packet.packet_type == PacketType::StreamData {
+                if packet.packet_type == PacketType::Data
+                    || packet.packet_type == PacketType::StreamData
+                {
                     let text = String::from_utf8_lossy(&plaintext);
                     println!("← Echo: {}", text);
                 } else if packet.packet_type == PacketType::GoAway {
@@ -121,7 +149,9 @@ async fn connect_async(addr: SocketAddr, json: bool) {
 /// Disconnect the active KSP session or connection.
 pub fn run_disconnect(json: bool) {
     if json {
-        ui::json_output(&serde_json::json!({"status": "disconnected", "message": "Active session closed"}));
+        ui::json_output(
+            &serde_json::json!({"status": "disconnected", "message": "Active session closed"}),
+        );
     } else {
         ui::success("Disconnected active KSP session gracefully.");
     }

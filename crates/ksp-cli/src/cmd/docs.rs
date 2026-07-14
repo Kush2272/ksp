@@ -1,7 +1,7 @@
 //! `ksp docs` / `ksp rfc` — Open documentation and RFC.
 
-use colored::Colorize;
 use crate::ui;
+use colored::Colorize;
 
 pub fn run(topic: Option<&str>, json: bool) {
     let base_url = "https://www.kspprotocol.dev";

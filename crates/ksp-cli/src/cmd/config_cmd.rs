@@ -1,15 +1,17 @@
 //! `ksp config set|get` — Configuration management.
 
-use colored::Colorize;
-use crate::ui;
 use crate::config::KspConfig;
+use crate::ui;
+use colored::Colorize;
 
 pub fn run_get(key: &str, json: bool) {
     let config_path = match KspConfig::find_config() {
         Some(p) => p,
         None => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": "No ksp.toml found"}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": "No ksp.toml found"}),
+                );
             } else {
                 ui::failure("No ksp.toml found. Run `ksp init` first.");
             }
@@ -102,7 +104,9 @@ pub fn run_show(json: bool) {
         Some(p) => p,
         None => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": "No ksp.toml found"}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": "No ksp.toml found"}),
+                );
             } else {
                 ui::failure("No ksp.toml found. Run `ksp init` first.");
             }
@@ -134,8 +138,14 @@ pub fn run_show(json: bool) {
         t.add_row(vec!["Host", &config.server.host]);
         t.add_row(vec!["Port", &config.server.port.to_string()]);
         t.add_row(vec!["Cipher", &config.security.cipher]);
-        t.add_row(vec!["Compression", &config.security.compression.to_string()]);
-        t.add_row(vec!["Replay Window", &config.security.replay_window.to_string()]);
+        t.add_row(vec![
+            "Compression",
+            &config.security.compression.to_string(),
+        ]);
+        t.add_row(vec![
+            "Replay Window",
+            &config.security.replay_window.to_string(),
+        ]);
         t.add_row(vec!["Certificate", &config.security.cert_file]);
         t.add_row(vec!["Log Level", &config.logging.level]);
         println!("{t}");
@@ -152,7 +162,10 @@ pub fn run_validate(json: bool) {
         Some(p) => p,
         None => {
             if json {
-                println!("{}", serde_json::json!({"status": "error", "message": "No ksp.toml found"}));
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "error", "message": "No ksp.toml found"})
+                );
             } else {
                 ui::failure("No ksp.toml found to validate.");
             }
@@ -164,7 +177,10 @@ pub fn run_validate(json: bool) {
         Ok(c) => c,
         Err(e) => {
             if json {
-                println!("{}", serde_json::json!({"status": "invalid", "error": e.to_string()}));
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "invalid", "error": e.to_string()})
+                );
             } else {
                 ui::failure(&format!("Syntax Error in ksp.toml: {}", e));
             }
@@ -190,14 +206,22 @@ pub fn run_validate(json: bool) {
     }
 
     if json {
-        println!("{}", serde_json::json!({"status": if ok { "valid" } else { "invalid" }, "checks": checks.len()}));
+        println!(
+            "{}",
+            serde_json::json!({"status": if ok { "valid" } else { "invalid" }, "checks": checks.len()})
+        );
         return;
     }
 
     ui::header("KSP Config Validation (`ksp.toml`)");
     for (name, passed, note) in checks {
         if passed {
-            println!("  {} {:<22} {}", "✔".green().bold(), name.white(), note.dimmed());
+            println!(
+                "  {} {:<22} {}",
+                "✔".green().bold(),
+                name.white(),
+                note.dimmed()
+            );
         } else {
             println!("  {} {:<22} {}", "✘".red().bold(), name.white(), note.red());
         }
@@ -211,18 +235,23 @@ pub fn run_reset(json: bool) {
     match std::fs::write(path, default_config.to_toml()) {
         Ok(_) => {
             if json {
-                println!("{}", serde_json::json!({"status": "reset", "file": "ksp.toml"}));
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "reset", "file": "ksp.toml"})
+                );
             } else {
                 ui::success("Reset ksp.toml to factory default values.");
             }
         }
         Err(e) => {
             if json {
-                println!("{}", serde_json::json!({"status": "error", "error": e.to_string()}));
+                println!(
+                    "{}",
+                    serde_json::json!({"status": "error", "error": e.to_string()})
+                );
             } else {
                 ui::failure(&format!("Failed to reset ksp.toml: {}", e));
             }
         }
     }
 }
-

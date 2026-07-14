@@ -4,7 +4,10 @@
 //! colored output, Unicode box-drawing, tables, progress bars, and spinners.
 
 use colored::Colorize;
-use comfy_table::{modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL, Table, ContentArrangement, Cell, Color as TableColor};
+use comfy_table::{
+    Cell, Color as TableColor, ContentArrangement, Table, modifiers::UTF8_ROUND_CORNERS,
+    presets::UTF8_FULL,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 
@@ -153,7 +156,7 @@ pub fn table(headers: &[&str]) -> Table {
 
 /// Print a hex dump of binary data with offset, hex, and ASCII columns.
 pub fn hex_dump(data: &[u8], max_lines: usize) {
-    let lines = (data.len() + 15) / 16;
+    let lines = data.len().div_ceil(16);
     let display_lines = lines.min(max_lines);
 
     for i in 0..display_lines {
@@ -240,22 +243,14 @@ pub fn json_output<T: serde::Serialize>(value: &T) {
 /// Print a final status summary line.
 pub fn summary_ok(msg: &str) {
     println!();
-    println!(
-        "  {} {}",
-        "✔".green().bold(),
-        msg.green().bold()
-    );
+    println!("  {} {}", "✔".green().bold(), msg.green().bold());
     println!();
 }
 
 /// Print a final failure summary line.
 pub fn summary_fail(msg: &str) {
     println!();
-    println!(
-        "  {} {}",
-        "✘".red().bold(),
-        msg.red().bold()
-    );
+    println!("  {} {}", "✘".red().bold(), msg.red().bold());
     println!();
 }
 

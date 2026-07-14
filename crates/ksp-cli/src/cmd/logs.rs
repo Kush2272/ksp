@@ -3,11 +3,11 @@
 //! Supports `--follow` (`-f`), `--json`, `--session <id>`, `--level <trace|debug|info|warn|error>`,
 //! and queries the active `ksp daemon` over IPC or reads local persistent log files (`~/.ksp/logs/`).
 
-use colored::Colorize;
-use crate::ui;
 use crate::cmd::telemetry::LogEntry;
-use tokio::net::TcpStream;
+use crate::ui;
+use colored::Colorize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
 
 pub fn run(follow: bool, json: bool, level: Option<&str>, session: Option<&str>, lines: usize) {
     if !json && !follow {
@@ -41,7 +41,13 @@ pub fn run(follow: bool, json: bool, level: Option<&str>, session: Option<&str>,
                     Some(s) => format!(" [{}]", s.dimmed()),
                     None => "".to_string(),
                 };
-                println!("{} [{:<5}]{} {}", entry.timestamp.dimmed(), lvl_colored, sid_str, entry.message);
+                println!(
+                    "{} [{:<5}]{} {}",
+                    entry.timestamp.dimmed(),
+                    lvl_colored,
+                    sid_str,
+                    entry.message
+                );
             }
             if entries.is_empty() {
                 ui::info("No log entries found matching filter criteria.");
@@ -50,7 +56,10 @@ pub fn run(follow: bool, json: bool, level: Option<&str>, session: Option<&str>,
 
         if follow {
             if !json {
-                println!("\n{}", "── Following live log stream (Ctrl+C to stop) ──".dimmed());
+                println!(
+                    "\n{}",
+                    "── Following live log stream (Ctrl+C to stop) ──".dimmed()
+                );
             }
             let mut last_count = entries.len();
             loop {
@@ -74,7 +83,13 @@ pub fn run(follow: bool, json: bool, level: Option<&str>, session: Option<&str>,
                                 Some(s) => format!(" [{}]", s.dimmed()),
                                 None => "".to_string(),
                             };
-                            println!("{} [{:<5}]{} {}", entry.timestamp.dimmed(), lvl_colored, sid_str, entry.message);
+                            println!(
+                                "{} [{:<5}]{} {}",
+                                entry.timestamp.dimmed(),
+                                lvl_colored,
+                                sid_str,
+                                entry.message
+                            );
                         }
                     }
                     last_count = current.len();
@@ -84,8 +99,15 @@ pub fn run(follow: bool, json: bool, level: Option<&str>, session: Option<&str>,
     });
 }
 
-async fn query_ipc_logs(level: Option<&str>, session: Option<&str>, limit: usize) -> Option<Vec<LogEntry>> {
-    let mut stream = TcpStream::connect(format!("127.0.0.1:{}", crate::cmd::daemon::DAEMON_IPC_PORT)).await.ok()?;
+async fn query_ipc_logs(
+    level: Option<&str>,
+    session: Option<&str>,
+    limit: usize,
+) -> Option<Vec<LogEntry>> {
+    let mut stream =
+        TcpStream::connect(format!("127.0.0.1:{}", crate::cmd::daemon::DAEMON_IPC_PORT))
+            .await
+            .ok()?;
     let req = serde_json::json!({
         "cmd": "logs",
         "level": level.unwrap_or("all"),
@@ -99,12 +121,11 @@ async fn query_ipc_logs(level: Option<&str>, session: Option<&str>, limit: usize
     let _ = stream.read_to_end(&mut resp_buf).await;
     let resp_str = String::from_utf8_lossy(&resp_buf);
 
-    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&resp_str) {
-        if let Some(logs_arr) = val.get("logs") {
-            if let Ok(entries) = serde_json::from_value::<Vec<LogEntry>>(logs_arr.clone()) {
-                return Some(entries);
-            }
-        }
+    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&resp_str)
+        && let Some(logs_arr) = val.get("logs")
+        && let Ok(entries) = serde_json::from_value::<Vec<LogEntry>>(logs_arr.clone())
+    {
+        return Some(entries);
     }
     None
 }

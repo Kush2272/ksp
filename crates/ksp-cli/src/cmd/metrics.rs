@@ -3,17 +3,21 @@
 //! Exposes active session counts, bytes transferred, packet counters, and replay attack
 //! telemetry in standard Prometheus OpenMetrics text format or starts a dedicated metrics server.
 
-use colored::Colorize;
-use crate::ui;
 use crate::cmd::telemetry::TelemetrySnapshot;
-use tokio::net::{TcpListener, TcpStream};
+use crate::ui;
+use colored::Colorize;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
 
 pub fn run(listen_addr: Option<&str>, json: bool) {
     if let Some(addr) = listen_addr {
         if !json {
             ui::print_header("KSP Prometheus Metrics Server");
-            println!("  {} Starting Prometheus HTTP endpoint on {}...", "🔄".yellow(), addr.white().bold());
+            println!(
+                "  {} Starting Prometheus HTTP endpoint on {}...",
+                "🔄".yellow(),
+                addr.white().bold()
+            );
         }
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
@@ -51,7 +55,10 @@ pub fn run(listen_addr: Option<&str>, json: bool) {
 }
 
 async fn query_ipc_metrics() -> Option<String> {
-    let mut stream = TcpStream::connect(format!("127.0.0.1:{}", crate::cmd::daemon::DAEMON_IPC_PORT)).await.ok()?;
+    let mut stream =
+        TcpStream::connect(format!("127.0.0.1:{}", crate::cmd::daemon::DAEMON_IPC_PORT))
+            .await
+            .ok()?;
     let _ = stream.write_all(b"{\"cmd\":\"metrics\"}\n").await;
     let mut resp_buf = Vec::new();
     let _ = stream.read_to_end(&mut resp_buf).await;
@@ -70,7 +77,9 @@ pub fn format_snapshot_metrics(snap: &TelemetrySnapshot) -> String {
     prom.push_str("# HELP ksp_active_streams Number of currently active multiplexed streams\n");
     prom.push_str("# TYPE ksp_active_streams gauge\n");
     prom.push_str(&format!("ksp_active_streams {}\n", snap.active_streams));
-    prom.push_str("# HELP ksp_total_bytes_sent Total payload bytes transmitted across all sessions\n");
+    prom.push_str(
+        "# HELP ksp_total_bytes_sent Total payload bytes transmitted across all sessions\n",
+    );
     prom.push_str("# TYPE ksp_total_bytes_sent counter\n");
     prom.push_str(&format!("ksp_total_bytes_sent {}\n", snap.total_bytes_sent));
     prom.push_str("# HELP ksp_total_bytes_recv Total payload bytes received across all sessions\n");
@@ -79,9 +88,14 @@ pub fn format_snapshot_metrics(snap: &TelemetrySnapshot) -> String {
     prom.push_str("# HELP ksp_total_packets Total encrypted protocol packets processed\n");
     prom.push_str("# TYPE ksp_total_packets counter\n");
     prom.push_str(&format!("ksp_total_packets {}\n", snap.total_packets));
-    prom.push_str("# HELP ksp_replay_attempts_blocked Total sliding-window replay attacks dropped\n");
+    prom.push_str(
+        "# HELP ksp_replay_attempts_blocked Total sliding-window replay attacks dropped\n",
+    );
     prom.push_str("# TYPE ksp_replay_attempts_blocked counter\n");
-    prom.push_str(&format!("ksp_replay_attempts_blocked {}\n", snap.replay_attempts_blocked));
+    prom.push_str(&format!(
+        "ksp_replay_attempts_blocked {}\n",
+        snap.replay_attempts_blocked
+    ));
     prom
 }
 
@@ -90,19 +104,32 @@ async fn run_http_metrics_server(addr: &str, json: bool) {
         Ok(l) => l,
         Err(e) => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": format!("Failed to bind {}: {}", addr, e)}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": format!("Failed to bind {}: {}", addr, e)}),
+                );
             } else {
-                ui::failure(&format!("Failed to bind Prometheus metrics server on {}: {}", addr, e));
+                ui::failure(&format!(
+                    "Failed to bind Prometheus metrics server on {}: {}",
+                    addr, e
+                ));
             }
             return;
         }
     };
 
     if json {
-        ui::json_output(&serde_json::json!({"status": "running", "endpoint": format!("http://{}/metrics", addr)}));
+        ui::json_output(
+            &serde_json::json!({"status": "running", "endpoint": format!("http://{}/metrics", addr)}),
+        );
     } else {
-        ui::success(&format!("Prometheus server listening on http://{}/metrics", addr));
-        println!("  {} Scrape endpoint ready. Press Ctrl+C to exit.\n", "ℹ".blue());
+        ui::success(&format!(
+            "Prometheus server listening on http://{}/metrics",
+            addr
+        ));
+        println!(
+            "  {} Scrape endpoint ready. Press Ctrl+C to exit.\n",
+            "ℹ".blue()
+        );
     }
 
     loop {
