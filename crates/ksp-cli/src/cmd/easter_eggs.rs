@@ -382,3 +382,94 @@ pub fn run_journey(json: bool) {
             .bold()
     );
 }
+
+/// `ksp dance` — Secure Rickroll Protocol (`curl ascii.live/rick` + animated ASCII loop).
+pub fn run_dance(json: bool) {
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "status": "rickrolled",
+                "protocol": "RFC-0418 (Secure Dance Exchange)",
+                "song": "Never Gonna Give You Up",
+                "artist": "Rick Astley",
+                "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "ascii_url": "ascii.live/rick"
+            })
+        );
+        return;
+    }
+
+    ui::header("KSP Secure Dance Protocol — RFC-0418");
+    let init_steps = [
+        "Initiating X25519 Dance Key Exchange...",
+        "Handshaking with node dQw4w9WgXcQ...",
+        "Verifying Ed25519 Groove Certificate...",
+        "Establishing encrypted audio/visual stream...",
+    ];
+
+    for step in &init_steps {
+        println!("  {} {}", "▸".cyan().bold(), step.white().bold());
+        thread::sleep(Duration::from_millis(300));
+    }
+
+    println!("\n  {} Connection established! Streaming secure dance packet...\n", "✔".green().bold());
+    thread::sleep(Duration::from_millis(500));
+
+    // Try running `curl -s ascii.live/rick` directly in cmd/terminal!
+    println!("  {}", "─── Dancing over KSP (Ctrl+C to exit) ───".yellow().bold());
+    println!();
+
+    let curl_cmd = if cfg!(target_os = "windows") { "curl.exe" } else { "curl" };
+    let status = std::process::Command::new(curl_cmd)
+        .args(["-s", "ascii.live/rick"])
+        .status();
+
+    // If curl failed or exited or wasn't found, play our self-contained animated ASCII loop right inside cmd!
+    if status.is_err() || !status.as_ref().map(|s| s.success()).unwrap_or(false) {
+        let frames = [
+            r#"
+      o
+     /|\      "Never gonna give you up!"
+     / \
+            "#,
+            r#"
+      \o/
+       |      "Never gonna let you down!"
+      / \
+            "#,
+            r#"
+      _o_
+       |      "Never gonna run around and desert you!"
+      / \
+            "#,
+            r#"
+     \o
+      |\      "Never gonna make you cry!"
+     / \
+            "#,
+            r#"
+      o/
+     /|       "Never gonna say goodbye!"
+     / \
+            "#,
+            r#"
+      o
+     /|\      "Never gonna tell a lie and hurt you!"
+     / \
+            "#,
+        ];
+
+        for _ in 0..3 {
+            for frame in &frames {
+                ui::header("KSP Secure Dance Protocol — RFC-0418");
+                println!("{}", frame.magenta().bold());
+                thread::sleep(Duration::from_millis(450));
+            }
+        }
+
+        println!("\n  {} {}\n", "🕺".yellow(), "You have been securely Rickrolled across all 9 layers of KSP!".green().bold());
+        println!("  {} {}\n", "🔗 Watch the full video:".cyan(), "https://www.youtube.com/watch?v=dQw4w9WgXcQ".underline());
+    }
+}
+

@@ -344,6 +344,9 @@ enum Commands {
     /// Brew secure packets (HTTP 418).
     Coffee,
 
+    /// Secure Dance Exchange (RFC-0418 Rickroll).
+    Dance,
+
     /// Display a random networking or cryptography quote.
     Quote,
 
@@ -735,7 +738,8 @@ fn main() {
             | Commands::Demo
             | Commands::About
             | Commands::Matrix
-            | Commands::Coffee => {} // These print their own banner or output
+            | Commands::Coffee
+            | Commands::Dance => {} // These print their own banner or output
             _ => {}
         }
     }
@@ -915,6 +919,7 @@ fn main() {
         Commands::About => cmd::easter_eggs::run_about(cli.json),
         Commands::Matrix => cmd::easter_eggs::run_matrix(cli.json),
         Commands::Coffee => cmd::easter_eggs::run_coffee(cli.json),
+        Commands::Dance => cmd::easter_eggs::run_dance(cli.json),
         Commands::Quote => cmd::easter_eggs::run_quote(cli.json),
         Commands::Credits => cmd::easter_eggs::run_credits(cli.json),
         Commands::Dev => cmd::easter_eggs::run_dev(cli.json),

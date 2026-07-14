@@ -253,31 +253,79 @@ pub fn run_uninstall(force: bool, json: bool) {
             );
         }
         _ => {
-            println!(
-                "  {} Binary may not be installed via Cargo (or requires manual removal).",
-                "i".cyan().bold()
-            );
-            println!();
-            println!("  {}", "To guarantee complete binary removal across all platforms, run the 1-liner uninstaller:".yellow().bold());
-            println!("    {}", "Windows (PowerShell):".yellow().bold());
-            println!(
-                "      {}",
-                "irm https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.ps1 | iex"
-                    .cyan()
-                    .bold()
-            );
-            println!();
-            println!("    {}", "Linux & macOS (Terminal):".yellow().bold());
-            println!(
-                "      {}",
-                "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.sh | sh"
-                    .cyan()
-                    .bold()
-            );
+            if cfg!(target_os = "windows") {
+                println!(
+                    "  {} {}",
+                    "[!] Windows OS File Lock Detected (os error 5 - Access Denied):".red().bold(),
+                    "Windows prevents ksp.exe from being deleted while the process is actively running.".white()
+                );
+                println!();
+
+                let mut schedule_cleanup = force;
+                if !force {
+                    use dialoguer::Confirm;
+                    if let Ok(true) = Confirm::new()
+                        .with_prompt("Would you like KSP to schedule automated self-cleanup to delete ksp.exe 2 seconds after you exit?")
+                        .default(true)
+                        .interact()
+                    {
+                        schedule_cleanup = true;
+                    }
+                }
+
+                if schedule_cleanup {
+                    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
+                        let bin_path = std::path::PathBuf::from(home).join(".cargo").join("bin").join("ksp.exe");
+                        let _ = std::process::Command::new("cmd")
+                            .args([
+                                "/C",
+                                &format!(
+                                    "timeout /t 2 /nobreak >nul & cargo uninstall ksp-cli 2>nul & del /f /q \"{}\" 2>nul",
+                                    bin_path.display()
+                                ),
+                            ])
+                            .spawn();
+                    }
+                    println!(
+                        "  {} {}",
+                        "✔".green().bold(),
+                        "Automated self-cleanup scheduled! ksp.exe will be deleted cleanly 2 seconds after this process exits.".green().bold()
+                    );
+                } else {
+                    println!("  {}", "To remove the binary manually after closing your terminal, run:".yellow().bold());
+                    println!("    {}", "cargo uninstall ksp-cli".cyan().bold());
+                }
+            } else {
+                println!(
+                    "  {} Binary may not be installed via Cargo (or requires manual removal).",
+                    "i".cyan().bold()
+                );
+                println!();
+                println!("  {}", "To guarantee complete binary removal across all platforms, run the 1-liner uninstaller:".yellow().bold());
+                println!("    {}", "Windows (PowerShell):".yellow().bold());
+                println!(
+                    "      {}",
+                    "irm https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.ps1 | iex"
+                        .cyan()
+                        .bold()
+                );
+                println!();
+                println!("    {}", "Linux & macOS (Terminal):".yellow().bold());
+                println!(
+                    "      {}",
+                    "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.sh | sh"
+                        .cyan()
+                        .bold()
+                );
+            }
         }
     }
 
     println!();
     ui::summary_ok("KSP CLI cleanup finished. Thank you for testing Kush Secure Protocol!");
+    println!();
+    println!("  {}", "To reinstall KSP CLI anytime in the future, run:".cyan().bold());
+    println!("    {}", "irm https://raw.githubusercontent.com/Kush2272/ksp/main/install.ps1 | iex".white().bold());
+    println!("    {}", "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/install.sh | sh".dimmed());
     println!();
 }

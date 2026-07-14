@@ -33,3 +33,6 @@ if [ -d "$CONFIG_DIR" ]; then
 fi
 
 printf "\n\033[32m  [OK] KSP CLI has been completely uninstalled from your system!\033[0m\n\n"
+printf "\033[36m  To reinstall KSP CLI anytime in the future, run:\033[0m\n"
+printf "    curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/install.sh | sh\n"
+printf "    # Or via Cargo: cargo install --git https://github.com/Kush2272/ksp.git ksp-cli --force\n\n"

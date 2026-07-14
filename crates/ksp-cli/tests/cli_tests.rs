@@ -187,3 +187,193 @@ fn test_cli_plugins_list_json() {
     assert_eq!(json["status"], "success");
     assert!(json["plugins"].is_array());
 }
+
+#[test]
+fn test_cli_all_commands_help() {
+    let help_commands: &[&[&str]] = &[
+        &["version", "--help"],
+        &["init", "--help"],
+        &["new", "--help"],
+        &["generate", "--help"],
+        &["doctor", "--help"],
+        &["diag", "--help"],
+        &["proxy", "--help"],
+        &["gateway", "--help"],
+        &["server", "--help"],
+        &["server", "start", "--help"],
+        &["server", "stop", "--help"],
+        &["server", "status", "--help"],
+        &["server", "restart", "--help"],
+        &["server", "reload", "--help"],
+        &["connect", "--help"],
+        &["disconnect", "--help"],
+        &["ping", "--help"],
+        &["packet", "--help"],
+        &["packet", "inspect", "--help"],
+        &["packet", "decode", "--help"],
+        &["packet", "build", "--help"],
+        &["packet", "encode", "--help"],
+        &["packet", "export", "--help"],
+        &["packet", "visualize", "--help"],
+        &["capture", "--help"],
+        &["capture", "start", "--help"],
+        &["capture", "stop", "--help"],
+        &["capture", "export", "--help"],
+        &["capture", "live", "--help"],
+        &["wireshark", "--help"],
+        &["wireshark", "install", "--help"],
+        &["wireshark", "open", "--help"],
+        &["wireshark", "uninstall", "--help"],
+        &["benchmark", "--help"],
+        &["chat", "--help"],
+        &["transfer", "--help"],
+        &["transfer", "send", "--help"],
+        &["transfer", "receive", "--help"],
+        &["transfer", "resume", "--help"],
+        &["receive", "--help"],
+        &["cert", "--help"],
+        &["cert", "generate", "--help"],
+        &["cert", "inspect", "--help"],
+        &["cert", "verify", "--help"],
+        &["cert", "renew", "--help"],
+        &["security", "--help"],
+        &["replay", "--help"],
+        &["replay", "simulate", "--help"],
+        &["session", "--help"],
+        &["session", "list", "--help"],
+        &["session", "inspect", "--help"],
+        &["session", "close", "--help"],
+        &["session", "resume", "--help"],
+        &["stream", "--help"],
+        &["stream", "list", "--help"],
+        &["stream", "open", "--help"],
+        &["stream", "close", "--help"],
+        &["stream", "reset", "--help"],
+        &["explain", "--help"],
+        &["learn", "--help"],
+        &["rfc", "--help"],
+        &["demo", "--help"],
+        &["config", "--help"],
+        &["config", "get", "--help"],
+        &["config", "set", "--help"],
+        &["config", "show", "--help"],
+        &["config", "list", "--help"],
+        &["config", "validate", "--help"],
+        &["config", "reset", "--help"],
+        &["profile", "--help"],
+        &["profile", "create", "--help"],
+        &["profile", "switch", "--help"],
+        &["profile", "list", "--help"],
+        &["env", "--help"],
+        &["env", "use", "--help"],
+        &["env", "list", "--help"],
+        &["dist", "--help"],
+        &["update", "--help"],
+        &["install-script", "--help"],
+        &["uninstall", "--help"],
+        &["validate", "--help"],
+        &["info", "--help"],
+        &["playground", "--help"],
+        &["docs", "--help"],
+        &["shell", "--help"],
+        &["completion", "--help"],
+        &["plugins", "--help"],
+        &["plugins", "list", "--help"],
+        &["plugins", "install", "--help"],
+        &["plugins", "remove", "--help"],
+        &["monitor", "--help"],
+        &["dashboard", "--help"],
+        &["stats", "--help"],
+        &["trace", "--help"],
+        &["inspect", "--help"],
+        &["inspect", "session", "--help"],
+        &["inspect", "packet", "--help"],
+        &["inspect", "cert", "--help"],
+        &["about", "--help"],
+        &["matrix", "--help"],
+        &["coffee", "--help"],
+        &["dance", "--help"],
+        &["quote", "--help"],
+        &["credits", "--help"],
+        &["dev", "--help"],
+        &["daemon", "--help"],
+        &["daemon", "start", "--help"],
+        &["daemon", "stop", "--help"],
+        &["daemon", "status", "--help"],
+        &["logs", "--help"],
+        &["metrics", "--help"],
+        &["journey", "--help"],
+    ];
+
+    for args in help_commands {
+        let output = Command::new(ksp_bin())
+            .args(*args)
+            .output()
+            .unwrap_or_else(|e| panic!("Failed to run ksp {:?}: {}", args, e));
+        assert!(
+            output.status.success(),
+            "Command `ksp {:?}` failed with status {:?}.\nStderr: {}",
+            args,
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("Usage:") || stdout.contains("ksp") || stdout.contains("Options:"),
+            "Command `ksp {:?}` output didn't contain Usage or ksp: {}",
+            args,
+            stdout
+        );
+    }
+}
+
+#[test]
+fn test_cli_all_commands_json_execution() {
+    let json_commands: &[&[&str]] = &[
+        &["--json", "version"],
+        &["--json", "info"],
+        &["--json", "explain", "handshake"],
+        &["--json", "learn", "list"],
+        &["--json", "rfc", "list"],
+        &["--json", "config", "show"],
+        &["--json", "config", "list"],
+        &["--json", "profile", "list"],
+        &["--json", "env", "list"],
+        &["--json", "session", "list"],
+        &["--json", "stream", "list"],
+        &["--json", "about"],
+        &["--json", "matrix"],
+        &["--json", "coffee"],
+        &["--json", "dance"],
+        &["--json", "quote"],
+        &["--json", "credits"],
+        &["--json", "dev"],
+        &["--json", "journey"],
+        &["--json", "shell"],
+        &["--json", "completion", "bash"],
+        &["--json", "update", "--check"],
+        &["--json", "install-script"],
+        &["--json", "server", "status"],
+        &["--json", "daemon", "status"],
+        &["--json", "security", "replay"],
+        &["--json", "plugins", "list"],
+    ];
+
+    for args in json_commands {
+        let output = Command::new(ksp_bin())
+            .args(*args)
+            .output()
+            .unwrap_or_else(|e| panic!("Failed to run ksp {:?}: {}", args, e));
+        assert!(
+            output.status.success(),
+            "Command `ksp {:?}` failed with status {:?}.\nStdout: {}\nStderr: {}",
+            args,
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let _json: serde_json::Value = serde_json::from_slice(&output.stdout)
+            .unwrap_or_else(|e| panic!("Output for `ksp {:?}` must be valid JSON: {}\nStdout was: {}", args, e, String::from_utf8_lossy(&output.stdout)));
+    }
+}
+
