@@ -1,0 +1,48 @@
+[package]
+name = "ksp-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Unified CLI for the Kush Secure Protocol"
+
+[[bin]]
+name = "ksp"
+path = "src/main.rs"
+
+[dependencies]
+ksp-core = { workspace = true }
+ksp-crypto = { workspace = true }
+ksp-handshake = { workspace = true }
+ksp-transport = { workspace = true }
+ksp-client = { workspace = true }
+ksp-server = { workspace = true }
+sha2 = { workspace = true }
+zeroize = { workspace = true }
+toml = { workspace = true }
+
+tokio = { workspace = true }
+clap = { workspace = true }
+clap_complete = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+colored = { workspace = true }
+comfy-table = { workspace = true }
+indicatif = { workspace = true }
+dialoguer = { workspace = true }
+console = { workspace = true }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+hex = { workspace = true }
+chrono = { workspace = true }
+open = { workspace = true }
+sysinfo = { workspace = true }
+ctrlc = { workspace = true }
+
+bytes = { workspace = true }
+uuid = { workspace = true }
+rand = { workspace = true }
+ed25519-dalek = { workspace = true }

@@ -11,6 +11,8 @@ ksp-core = { workspace = true }
 ksp-crypto = { workspace = true }
 ksp-handshake = { workspace = true }
 ksp-transport = { workspace = true }
+ksp-client = { workspace = true }
+ksp-server = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
 uuid = { workspace = true }

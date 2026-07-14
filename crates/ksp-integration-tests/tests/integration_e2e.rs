@@ -362,3 +362,146 @@ async fn test_e2e_tcp_handshake_and_echo() {
 
     server_handle.await.unwrap();
 }
+
+#[tokio::test]
+async fn test_client_server_sdk_roundtrip() {
+    use ksp_client::KspClient;
+    use ksp_server::{run_server, ServerConfig};
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    drop(listener); // Free port for KspServer binding
+
+    let (cert, key) = KspCertificate::generate_self_signed("ksp://test-sdk", 365);
+    let config = ServerConfig {
+        bind_addr: addr,
+        capabilities: ksp_core::capability::default_capabilities(),
+        certificate: cert,
+        signing_key: key,
+        gateway_target: None,
+        output_sink: None,
+    };
+
+    let server_task = tokio::spawn(async move {
+        let _ = run_server(config).await;
+    });
+
+    // Wait briefly for server bind
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    let mut client = KspClient::connect(addr).await.expect("SDK Connect should succeed");
+    
+    // Test multiple stream roundtrips
+    for stream_id in 1..=5 {
+        let msg = format!("Hello SDK Stream #{}", stream_id);
+        client.send_data(stream_id, msg.as_bytes()).await.expect("Send data OK");
+        
+        let (pkt, payload) = client.receive_packet().await.expect("Receive echo OK");
+        assert_eq!(pkt.stream_id, stream_id);
+        assert_eq!(String::from_utf8_lossy(&payload), msg);
+    }
+
+    client.close().await.expect("Client close OK");
+    server_task.abort();
+}
+
+#[tokio::test]
+async fn test_concurrent_multi_stream_transfer() {
+    use ksp_client::KspClient;
+    use ksp_server::{run_server, ServerConfig};
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    drop(listener);
+
+    let (cert, key) = KspCertificate::generate_self_signed("ksp://test-transfer", 365);
+    let config = ServerConfig {
+        bind_addr: addr,
+        capabilities: ksp_core::capability::default_capabilities(),
+        certificate: cert,
+        signing_key: key,
+        gateway_target: None,
+        output_sink: None,
+    };
+
+    let server_task = tokio::spawn(async move {
+        let _ = run_server(config).await;
+    });
+
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    let mut client = KspClient::connect(addr).await.expect("SDK Connect OK");
+
+    // Concurrent sending of 10 virtual streams over the multiplexed session
+    let mut tasks = Vec::new();
+    for sid in 100..110 {
+        let payload = vec![sid as u8; 1024]; // 1 KB payload per stream
+        client.send_data(sid, &payload).await.expect("Stream transmission OK");
+        tasks.push((sid, payload));
+    }
+
+    for (sid, expected_payload) in tasks {
+        let (pkt, response) = client.receive_packet().await.expect("Receive stream echo OK");
+        assert_eq!(pkt.stream_id, sid);
+        assert_eq!(response, expected_payload);
+    }
+
+    let _ = client.close().await;
+    server_task.abort();
+}
+
+#[tokio::test]
+async fn test_proxy_and_gateway_tunnel() {
+    use ksp_server::{run_server, ServerConfig};
+
+    // 1. Start a mock HTTP backend server (echo target)
+    let http_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let http_addr = http_listener.local_addr().unwrap();
+
+    let http_task = tokio::spawn(async move {
+        if let Ok((mut socket, _)) = http_listener.accept().await {
+            let mut buf = [0u8; 1024];
+            if let Ok(n) = socket.read(&mut buf).await {
+                if n > 0 {
+                    let resp = format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}", n, String::from_utf8_lossy(&buf[..n]));
+                    let _ = socket.write_all(resp.as_bytes()).await;
+                }
+            }
+        }
+    });
+
+    // 2. Start KSP Gateway server pointing to http_addr
+    let ksp_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let ksp_addr = ksp_listener.local_addr().unwrap();
+    drop(ksp_listener);
+
+    let (cert, key) = KspCertificate::generate_self_signed("ksp://test-gateway", 365);
+    let config = ServerConfig {
+        bind_addr: ksp_addr,
+        capabilities: ksp_core::capability::default_capabilities(),
+        certificate: cert,
+        signing_key: key,
+        gateway_target: Some(http_addr),
+        output_sink: None,
+    };
+
+    let gateway_task = tokio::spawn(async move {
+        let _ = run_server(config).await;
+    });
+
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+    // 3. Connect via KspClient and verify traffic is proxied to/from HTTP backend
+    let mut client = ksp_client::KspClient::connect(ksp_addr).await.expect("Gateway connect OK");
+    let http_req = b"GET /api/v1/health HTTP/1.1\r\nHost: localhost\r\n\r\n";
+    client.send_data(1, http_req).await.expect("Send request through gateway OK");
+
+    let (_pkt, resp) = client.receive_packet().await.expect("Receive gateway response OK");
+    let resp_str = String::from_utf8_lossy(&resp);
+    assert!(resp_str.contains("HTTP/1.1 200 OK"));
+    assert!(resp_str.contains("GET /api/v1/health"));
+
+    let _ = client.close().await;
+    http_task.abort();
+    gateway_task.abort();
+}

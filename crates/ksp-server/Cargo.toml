@@ -20,3 +20,5 @@ bytes = { workspace = true }
 rand = { workspace = true }
 uuid = { workspace = true }
 ed25519-dalek = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

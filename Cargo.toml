@@ -7,6 +7,7 @@ members = [
     "crates/ksp-transport",
     "crates/ksp-server",
     "crates/ksp-client",
+    "crates/ksp-cli",
     "crates/ksp-integration-tests",
 ]
 
@@ -56,6 +57,26 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # CLI
 clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+
+# CLI UI libraries
+colored = "2"
+comfy-table = "7"
+indicatif = "0.17"
+dialoguer = "0.11"
+console = "0.15"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Utilities
+hex = "0.4"
+chrono = "0.4"
+open = "5"
+sysinfo = "0.33"
+ctrlc = "3"
 
 # Internal crates
 ksp-core = { path = "crates/ksp-core" }
