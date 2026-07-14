@@ -262,7 +262,7 @@ enum Commands {
     InstallScript,
 
     /// Uninstall KSP CLI and clean up configuration files (`ksp uninstall` / `remove` / `delete`).
-    #[command(alias = "remove", alias = "delete", alias = "rm")]
+    #[command(alias = "remove", alias = "delete", alias = "rm", alias = "unistall", alias = "purge")]
     Uninstall {
         /// Force uninstallation without asking for interactive confirmation.
         #[arg(short = 'y', long)]
