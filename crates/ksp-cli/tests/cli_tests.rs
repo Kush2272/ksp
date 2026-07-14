@@ -170,9 +170,9 @@ fn test_cli_benchmark_json() {
     assert!(output.status.success());
     let json: serde_json::Value =
         serde_json::from_slice(&output.stdout).expect("Benchmark output must be valid JSON");
-    assert!(json["aes_256_gcm_mbps"].is_number());
-    assert!(json["chacha20_mbps"].is_number());
-    assert!(json["handshake_ns"].is_number());
+    assert_eq!(json["status"], "ok");
+    assert!(json["benchmarks"].is_array());
+    assert!(json["environment"].is_object());
 }
 
 #[test]
