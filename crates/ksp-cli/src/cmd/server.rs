@@ -119,18 +119,24 @@ pub fn run_stop(json: bool) {
         snap.status = "stopped".into();
         snap.save();
         if json {
-            ui::json_output(&serde_json::json!({"status": "stopped", "message": "Signal sent to KSP daemon"}));
+            ui::json_output(
+                &serde_json::json!({"status": "stopped", "message": "Signal sent to KSP daemon"}),
+            );
         } else {
             ui::print_header("KSP Server Stop");
             ui::success("Termination signal sent to KSP background daemon.");
         }
     } else {
         if json {
-            ui::json_output(&serde_json::json!({"status": "error", "message": "No active background KSP daemon found on IPC port 9899 to stop"}));
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": "No active background KSP daemon found on IPC port 9899 to stop"}),
+            );
         } else {
             ui::print_header("KSP Server Stop");
             ui::failure("No active background KSP daemon found on IPC port 9899 to stop.");
-            ui::info("If running interactively in foreground (`ksp server start`), use Ctrl+C in that terminal.");
+            ui::info(
+                "If running interactively in foreground (`ksp server start`), use Ctrl+C in that terminal.",
+            );
         }
         std::process::exit(1);
     }
@@ -158,7 +164,9 @@ pub fn run_reload(json: bool) {
             let resp_str = String::from_utf8_lossy(&buf[..n]);
             if resp_str.contains("\"reloaded\"") {
                 if json {
-                    ui::json_output(&serde_json::json!({"status": "reloaded", "message": "Configuration reloaded via daemon IPC"}));
+                    ui::json_output(
+                        &serde_json::json!({"status": "reloaded", "message": "Configuration reloaded via daemon IPC"}),
+                    );
                 } else {
                     ui::header("KSP Server Hot-Reload");
                     ui::success("Reload command successfully processed by KSP daemon via IPC.");
@@ -170,7 +178,9 @@ pub fn run_reload(json: bool) {
     }
 
     if json {
-        ui::json_output(&serde_json::json!({"status": "error", "message": "Cannot reload: no active background daemon listening on IPC port 9899"}));
+        ui::json_output(
+            &serde_json::json!({"status": "error", "message": "Cannot reload: no active background daemon listening on IPC port 9899"}),
+        );
     } else {
         ui::header("KSP Server Hot-Reload");
         ui::failure("Cannot reload: no active background daemon listening on IPC port 9899.");

@@ -147,6 +147,7 @@ pub fn run_send(file: &str, address: &str, json: bool) {
 
         // Step 5: Wait for FILE_ACK or echo response
         let mut verified_remote = false;
+        #[allow(clippy::collapsible_if)]
         if let Ok((_pkt, payload)) = tokio::time::timeout(std::time::Duration::from_secs(5), client.receive_packet()).await.unwrap_or(Err(ksp_core::error::KspError::ConnectionClosed)) {
             if let Ok(ack_val) = serde_json::from_slice::<serde_json::Value>(&payload) {
                 if ack_val.get("op").and_then(|v| v.as_str()) == Some("FILE_ACK") {
@@ -301,6 +302,7 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
         if let Some(ref p) = pb { p.finish_with_message("Resumed Chunks Delivered"); }
 
         let mut verified_remote = false;
+        #[allow(clippy::collapsible_if)]
         if let Ok((_pkt, payload)) = tokio::time::timeout(std::time::Duration::from_secs(5), client.receive_packet()).await.unwrap_or(Err(ksp_core::error::KspError::ConnectionClosed)) {
             if let Ok(ack_val) = serde_json::from_slice::<serde_json::Value>(&payload) {
                 if ack_val.get("op").and_then(|v| v.as_str()) == Some("FILE_ACK") {

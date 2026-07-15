@@ -17,7 +17,10 @@ pub mod startup;
 
 /// Print the KSP banner — shown on startup and --help
 pub fn print_banner() {
-    let banner = r#"
+    let ver = env!("CARGO_PKG_VERSION");
+    let ver_line = format!("     Kush Secure Protocol — CLI v{ver:<29} ║");
+    let banner = format!(
+        r#"
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
     ║     ██╗  ██╗███████╗██████╗                                   ║
@@ -27,11 +30,12 @@ pub fn print_banner() {
     ║     ██║  ██╗███████║██║                                       ║
     ║     ╚═╝  ╚═╝╚══════╝╚═╝                                       ║
     ║                                                               ║
-    ║     Kush Secure Protocol — CLI v0.1.0                         ║
+    ║{ver_line}
     ║     Experimental Secure Application Protocol                  ║
     ║       Sup bro all good                                        ║
     ╚═══════════════════════════════════════════════════════════════╝
-"#;
+"#
+    );
     println!("{}", banner.cyan());
 }
 

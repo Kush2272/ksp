@@ -8,7 +8,8 @@ use std::time::Duration;
 
 pub fn run_monitor(demo: bool, json: bool) {
     let snap = TelemetrySnapshot::fetch_current();
-    let has_traffic = snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
+    let has_traffic =
+        snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
     let is_active = demo || has_traffic;
 
     let active_sessions = if demo { 14 } else { snap.active_sessions };
@@ -54,7 +55,12 @@ pub fn run_monitor(demo: bool, json: bool) {
     println!("  {}", "─────────────────────────────────────────────────────────────────────────────────────────────".dimmed());
 
     if demo {
-        println!("  {}", "[SIMULATED --DEMO SESSIONS — NOT LIVE TRAFFIC]".yellow().bold());
+        println!(
+            "  {}",
+            "[SIMULATED --DEMO SESSIONS — NOT LIVE TRAFFIC]"
+                .yellow()
+                .bold()
+        );
         println!(
             "  {:<12} {:<36} {:<15} {:<16} {:<14}",
             "Just now".green(),
@@ -81,7 +87,10 @@ pub fn run_monitor(demo: bool, json: bool) {
         );
     } else if has_traffic && !snap.sessions.is_empty() {
         for s in &snap.sessions {
-            let tput = format!("{}/s", ui::format_bytes(s.bytes_transferred / snap.uptime_secs.max(1)));
+            let tput = format!(
+                "{}/s",
+                ui::format_bytes(s.bytes_transferred / snap.uptime_secs.max(1))
+            );
             println!(
                 "  {:<12} {:<36} {:<15} {:<16} {:<14}",
                 "Active".green(),
@@ -111,7 +120,8 @@ pub fn run_monitor(demo: bool, json: bool) {
 
 pub fn run_stats(demo: bool, json: bool) {
     let snap = TelemetrySnapshot::fetch_current();
-    let has_traffic = snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
+    let has_traffic =
+        snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
     let is_active = demo || has_traffic || snap.status == "running";
 
     if json {
@@ -155,12 +165,20 @@ pub fn run_stats(demo: bool, json: bool) {
         } else {
             &snap.status
         },
-        if is_active { "ksp server daemon active ✔" } else { "Offline / Idle" },
+        if is_active {
+            "ksp server daemon active ✔"
+        } else {
+            "Offline / Idle"
+        },
     ]);
     t.add_row(vec![
         "Active Sessions / Streams",
         &format!("{} sessions / {} streams", sessions, streams),
-        if sessions > 0 || demo { "Client multiplexers established" } else { "No active connections" },
+        if sessions > 0 || demo {
+            "Client multiplexers established"
+        } else {
+            "No active connections"
+        },
     ]);
     t.add_row(vec![
         "Total Bandwidth Processed",
@@ -182,13 +200,18 @@ pub fn run_stats(demo: bool, json: bool) {
         if demo {
             "0.41 ms (Simulated --demo)"
         } else if !snap.sessions.is_empty() {
-            let avg = snap.sessions.iter().map(|s| s.rtt_ms).sum::<f64>() / (snap.sessions.len() as f64);
+            let avg =
+                snap.sessions.iter().map(|s| s.rtt_ms).sum::<f64>() / (snap.sessions.len() as f64);
             let s_fmt = format!("{:.2} ms (Snapshot Avg)", avg);
             Box::leak(s_fmt.into_boxed_str())
         } else {
             "N/A (Collecting...)"
         },
-        if sessions > 0 || demo { "Live connection metrics" } else { "Connect to measure RTT" },
+        if sessions > 0 || demo {
+            "Live connection metrics"
+        } else {
+            "Connect to measure RTT"
+        },
     ]);
     println!("{t}");
     println!();
@@ -201,7 +224,8 @@ pub fn run_dashboard(demo: bool, json: bool) {
     }
 
     let snap = TelemetrySnapshot::fetch_current();
-    let has_traffic = snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
+    let has_traffic =
+        snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
     let is_active = demo || has_traffic;
 
     println!();
@@ -213,7 +237,14 @@ pub fn run_dashboard(demo: bool, json: bool) {
         let sessions = if demo { 14 } else { snap.active_sessions };
         let streams = if demo { 56 } else { snap.active_streams };
         let total_bytes = snap.total_bytes_sent + snap.total_bytes_recv;
-        let tput = if demo { "614.2 MB/s (Simulated --demo)".to_string() } else { format!("{}/s", ui::format_bytes(total_bytes / snap.uptime_secs.max(1))) };
+        let tput = if demo {
+            "614.2 MB/s (Simulated --demo)".to_string()
+        } else {
+            format!(
+                "{}/s",
+                ui::format_bytes(total_bytes / snap.uptime_secs.max(1))
+            )
+        };
         let rtt = if demo {
             "0.41 ms (p99: 0.82 ms) (Simulated --demo)".to_string()
         } else if !snap.sessions.is_empty() {
@@ -259,7 +290,11 @@ pub fn run_dashboard(demo: bool, json: bool) {
             "║".cyan(),
             format!("   Active Streams:   {} channels", streams).white(),
             "║".cyan(),
-            format!("   Window Lower Bound: Seq #{}", snap.total_packets.saturating_sub(1024)).dimmed(),
+            format!(
+                "   Window Lower Bound: Seq #{}",
+                snap.total_packets.saturating_sub(1024)
+            )
+            .dimmed(),
             "║".cyan()
         );
         println!(
@@ -292,26 +327,46 @@ pub fn run_dashboard(demo: bool, json: bool) {
         } else {
             println!("  {} {:<93} {}", "║".cyan(), " ACTIVE SESSION POOL & STREAM MULTIPLEXER STATUS                                               ".yellow().bold(), "║".cyan());
             for s in &snap.sessions {
-                let info = format!("   ✔ {} | {:<11} | {:>2} Streams | {:>6} | {:.2} ms", s.uuid, s.cipher, s.streams, ui::format_bytes(s.bytes_transferred), s.rtt_ms);
+                let info = format!(
+                    "   ✔ {} | {:<11} | {:>2} Streams | {:>6} | {:.2} ms",
+                    s.uuid,
+                    s.cipher,
+                    s.streams,
+                    ui::format_bytes(s.bytes_transferred),
+                    s.rtt_ms
+                );
                 println!("  {} {:<93} {}", "║".cyan(), info.white(), "║".cyan());
             }
         }
         println!("  {}", "╠═══════════════════════════════════════════════════════════════════════════════════════════════╣".cyan());
         println!("  {} {:<93} {}", "║".cyan(), " REAL-TIME THROUGHPUT SPARKLINE (Last 10 Seconds)                                              ".green().bold(), "║".cyan());
-        let spark_tput = if demo { "412 MB/s (Simulated --demo)" } else { &tput };
-        let spark_pkts = if demo { "Peak: 14,209 pkts/s | Current: 13,850 pkts/s (Simulated --demo)" } else { &format!("Current: {} pkts/s", snap.total_packets / snap.uptime_secs.max(1)) };
+        let spark_tput = if demo {
+            "412 MB/s (Simulated --demo)"
+        } else {
+            &tput
+        };
+        let spark_pkts = if demo {
+            "Peak: 14,209 pkts/s | Current: 13,850 pkts/s (Simulated --demo)"
+        } else {
+            &format!(
+                "Current: {} pkts/s",
+                snap.total_packets / snap.uptime_secs.max(1)
+            )
+        };
         println!(
             "  {} {:<93} {}",
             "║".cyan(),
-            format!(
-                "   Throughput:  ▄▅▆▇████▇▆▅▄▃▂  [{}]",
-                spark_tput
-            )
-            .yellow()
-            .bold(),
+            format!("   Throughput:  ▄▅▆▇████▇▆▅▄▃▂  [{}]", spark_tput)
+                .yellow()
+                .bold(),
             "║".cyan()
         );
-        println!("  {} {:<93} {}", "║".cyan(), format!("   Packet Rate: ▃▄▅▆▇███▇▆▅▄▃▂  [{}]", spark_pkts).yellow(), "║".cyan());
+        println!(
+            "  {} {:<93} {}",
+            "║".cyan(),
+            format!("   Packet Rate: ▃▄▅▆▇███▇▆▅▄▃▂  [{}]", spark_pkts).yellow(),
+            "║".cyan()
+        );
         println!("  {}", "╚═══════════════════════════════════════════════════════════════════════════════════════════════╝".cyan());
         println!();
     } else {

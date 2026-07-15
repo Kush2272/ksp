@@ -46,14 +46,16 @@ pub fn run_list(json: bool) {
         }
     } else {
         if snap.active_streams > 0 {
-            let streams: Vec<serde_json::Value> = (1..=snap.active_streams).map(|i| {
-                serde_json::json!({
-                    "stream_id": i,
-                    "state": "ESTABLISHED",
-                    "send_window": 65536,
-                    "recv_window": 65536
+            let streams: Vec<serde_json::Value> = (1..=snap.active_streams)
+                .map(|i| {
+                    serde_json::json!({
+                        "stream_id": i,
+                        "state": "ESTABLISHED",
+                        "send_window": 65536,
+                        "recv_window": 65536
+                    })
                 })
-            }).collect();
+                .collect();
             ui::json_output(&serde_json::json!({"streams": streams, "count": snap.active_streams}));
         } else {
             ui::json_output(&serde_json::json!({"streams": [], "count": 0}));
@@ -79,6 +81,7 @@ pub fn run_close(stream_id: u32, json: bool) {
         let req = serde_json::json!({"cmd": "stream_close", "stream_id": stream_id});
         if s.write_all(format!("{}\n", req).as_bytes()).is_ok() {
             let mut buf = [0u8; 512];
+            #[allow(clippy::collapsible_if)]
             if let Ok(n) = s.read(&mut buf) {
                 if let Ok(resp) = serde_json::from_slice::<serde_json::Value>(&buf[..n]) {
                     if resp["status"] == "closed" {
@@ -90,7 +93,10 @@ pub fn run_close(stream_id: u32, json: bool) {
                             }));
                         } else {
                             ui::print_header("KSP Stream Close");
-                            ui::success(&format!("Closed stream ID {} via daemon IPC control plane.", stream_id));
+                            ui::success(&format!(
+                                "Closed stream ID {} via daemon IPC control plane.",
+                                stream_id
+                            ));
                         }
                         return;
                     }
@@ -111,12 +117,19 @@ pub fn run_close(stream_id: u32, json: bool) {
             }));
         } else {
             ui::print_header("KSP Stream Close");
-            ui::success(&format!("Closed stream ID {} in local tracking snapshot.", stream_id));
-            ui::info("To close a live socket channel, ensure the KSP daemon/control plane is running (`ksp daemon start`).");
+            ui::success(&format!(
+                "Closed stream ID {} in local tracking snapshot.",
+                stream_id
+            ));
+            ui::info(
+                "To close a live socket channel, ensure the KSP daemon/control plane is running (`ksp daemon start`).",
+            );
         }
     } else {
         if json {
-            ui::json_output(&serde_json::json!({"status": "error", "message": format!("Stream ID {} not found", stream_id)}));
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": format!("Stream ID {} not found", stream_id)}),
+            );
         } else {
             ui::failure(&format!("Stream ID {} not found.", stream_id));
         }
@@ -145,7 +158,8 @@ pub fn run_reset(json: bool) {
             ui::header("KSP Local Stream Tracking Reset");
             println!(
                 "  {} Resetting local tracking counter for {} stream(s)...",
-                "🔄".yellow(), cleared
+                "🔄".yellow(),
+                cleared
             );
             println!(
                 "  {} Cleared active stream tracking inside local telemetry snapshot.",
@@ -159,11 +173,15 @@ pub fn run_reset(json: bool) {
         }
     } else {
         if json {
-            ui::json_output(&serde_json::json!({"status": "error", "message": "No active KSP streams found to reset"}));
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": "No active KSP streams found to reset"}),
+            );
         } else {
             ui::header("KSP Stream Reset");
             ui::failure("No active KSP streams found to reset.");
-            ui::info("Streams are created automatically during active sessions (`ksp connect` or `ksp transfer`).");
+            ui::info(
+                "Streams are created automatically during active sessions (`ksp connect` or `ksp transfer`).",
+            );
         }
         std::process::exit(1);
     }

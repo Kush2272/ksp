@@ -47,7 +47,9 @@ pub fn run_inspect(id: Option<&str>, json: bool) {
         Some(i) => i,
         None => {
             if json {
-                ui::json_output(&serde_json::json!({"status": "error", "message": "Missing session ID argument"}));
+                ui::json_output(
+                    &serde_json::json!({"status": "error", "message": "Missing session ID argument"}),
+                );
             } else {
                 ui::failure("Please specify a session UUID: ksp session inspect <id>");
             }
@@ -87,7 +89,9 @@ pub fn run_inspect(id: Option<&str>, json: bool) {
         }
     } else {
         if json {
-            ui::json_output(&serde_json::json!({"status": "error", "message": format!("Session not found: {}", target_id)}));
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": format!("Session not found: {}", target_id)}),
+            );
         } else {
             ui::failure(&format!("Session not found: {}", target_id));
         }
@@ -101,6 +105,7 @@ pub fn run_close(session_id: &str, json: bool) {
         let req = serde_json::json!({"cmd": "session_close", "uuid": session_id});
         if s.write_all(format!("{}\n", req).as_bytes()).is_ok() {
             let mut buf = [0u8; 512];
+            #[allow(clippy::collapsible_if)]
             if let Ok(n) = s.read(&mut buf) {
                 if let Ok(resp) = serde_json::from_slice::<serde_json::Value>(&buf[..n]) {
                     if resp["status"] == "closed" {
@@ -112,7 +117,10 @@ pub fn run_close(session_id: &str, json: bool) {
                             }));
                         } else {
                             ui::print_header("KSP Session Close");
-                            ui::success(&format!("Closed session UUID via daemon IPC control plane: {}", session_id));
+                            ui::success(&format!(
+                                "Closed session UUID via daemon IPC control plane: {}",
+                                session_id
+                            ));
                         }
                         return;
                     }
@@ -135,12 +143,19 @@ pub fn run_close(session_id: &str, json: bool) {
             }));
         } else {
             ui::print_header("KSP Session Close");
-            ui::success(&format!("Successfully removed session entry from local tracking: {}", session_id));
-            ui::info("To close a live network stream, ensure the KSP daemon/control plane is running (`ksp daemon start`).");
+            ui::success(&format!(
+                "Successfully removed session entry from local tracking: {}",
+                session_id
+            ));
+            ui::info(
+                "To close a live network stream, ensure the KSP daemon/control plane is running (`ksp daemon start`).",
+            );
         }
     } else {
         if json {
-            ui::json_output(&serde_json::json!({"status": "error", "message": format!("Session not found: {}", session_id)}));
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": format!("Session not found: {}", session_id)}),
+            );
         } else {
             ui::failure(&format!("Session not found: {}", session_id));
         }
@@ -161,7 +176,9 @@ pub fn run_resume(session_id: &str, json: bool) {
             ui::header("KSP Session Resumption Check");
             ui::kv("Session UUID", session_id);
             ui::success("Session entry found and verified in local tracking state.");
-            ui::info("To perform a live 0-RTT PSK handshake over TCP, run `ksp connect <target>` with this session ticket.");
+            ui::info(
+                "To perform a live 0-RTT PSK handshake over TCP, run `ksp connect <target>` with this session ticket.",
+            );
             println!();
         }
     } else {
@@ -171,7 +188,10 @@ pub fn run_resume(session_id: &str, json: bool) {
                 "message": format!("Cannot resume session {}: no resumption ticket or session state found", session_id)
             }));
         } else {
-            ui::failure(&format!("Cannot resume session {}: no resumption ticket or session state found", session_id));
+            ui::failure(&format!(
+                "Cannot resume session {}: no resumption ticket or session state found",
+                session_id
+            ));
         }
         std::process::exit(1);
     }

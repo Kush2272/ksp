@@ -8,7 +8,13 @@ fn main() {
         .args(["rev-parse", "--short", "HEAD"])
         .output()
         .ok()
-        .and_then(|o| if o.status.success() { String::from_utf8(o.stdout).ok() } else { None })
+        .and_then(|o| {
+            if o.status.success() {
+                String::from_utf8(o.stdout).ok()
+            } else {
+                None
+            }
+        })
         .map(|s| s.trim().to_string())
         .unwrap_or_else(|| "unknown".to_string());
 
@@ -16,7 +22,13 @@ fn main() {
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()
         .ok()
-        .and_then(|o| if o.status.success() { String::from_utf8(o.stdout).ok() } else { None })
+        .and_then(|o| {
+            if o.status.success() {
+                String::from_utf8(o.stdout).ok()
+            } else {
+                None
+            }
+        })
         .map(|s| s.trim().to_string())
         .unwrap_or_else(|| "main".to_string());
 
@@ -24,7 +36,13 @@ fn main() {
         .arg("-V")
         .output()
         .ok()
-        .and_then(|o| if o.status.success() { String::from_utf8(o.stdout).ok() } else { None })
+        .and_then(|o| {
+            if o.status.success() {
+                String::from_utf8(o.stdout).ok()
+            } else {
+                None
+            }
+        })
         .map(|s| s.trim().to_string())
         .unwrap_or_else(|| "rustc unknown".to_string());
 
@@ -38,7 +56,10 @@ fn main() {
 
 fn time_date_string() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
     let days = now / 86400;
     let mut year = 1970;
     let mut d = days as i64;
@@ -52,7 +73,20 @@ fn time_date_string() -> String {
         year += 1;
     }
     let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-    let months = [31, if leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    let months = [
+        31,
+        if leap { 29 } else { 28 },
+        31,
+        30,
+        31,
+        30,
+        31,
+        31,
+        30,
+        31,
+        30,
+        31,
+    ];
     let mut month = 1;
     for &m in &months {
         if d < m {

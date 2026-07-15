@@ -6,7 +6,9 @@
 use crate::ui;
 use colored::Colorize;
 use ksp_core::packet::KspPacket;
-pub use ksp_core::{append_packet_to_pcap, get_capture_file, get_capture_pid_file, PCAP_GLOBAL_HEADER};
+pub use ksp_core::{
+    PCAP_GLOBAL_HEADER, append_packet_to_pcap, get_capture_file, get_capture_pid_file,
+};
 use std::fs::{self, File};
 use std::io::Read;
 
@@ -26,7 +28,7 @@ pub fn run_start(_port: u16, json: bool) {
     crate::cmd::telemetry::LogEntry::record(
         "info",
         None,
-        &format!("PCAP capture hook initialized for KSP traffic (DLT 147 USER0)"),
+        "PCAP capture hook initialized for KSP traffic (DLT 147 USER0)",
     );
 
     if json {
@@ -42,7 +44,10 @@ pub fn run_start(_port: u16, json: bool) {
 
     ui::print_header("KSP Packet Capture (PCAP 2.4)");
     ui::kv("Capture Output", &pcap_path.display().to_string());
-    ui::kv("Recording Hook", "ksp_core::record_pcap_if_active (application-layer)");
+    ui::kv(
+        "Recording Hook",
+        "ksp_core::record_pcap_if_active (application-layer)",
+    );
     ui::kv("Link-Layer Header", "DLT 147 (USER0 / KSP Protocol Frame)");
     ui::kv("Snaplen", "65,535 bytes");
     println!();

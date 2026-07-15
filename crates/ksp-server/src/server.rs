@@ -51,7 +51,10 @@ impl AuthConfig {
     /// Load authentication constraints from environment variables.
     pub fn from_env() -> Self {
         let expected_api_key = std::env::var("KSP_API_KEY").ok().map(|s| s.into_bytes());
-        let expected_credentials = match (std::env::var("KSP_AUTH_USER"), std::env::var("KSP_AUTH_HASH")) {
+        let expected_credentials = match (
+            std::env::var("KSP_AUTH_USER"),
+            std::env::var("KSP_AUTH_HASH"),
+        ) {
             (Ok(u), Ok(h)) => Some((u, h.into_bytes())),
             _ => None,
         };
@@ -173,6 +176,7 @@ pub fn load_or_generate_cert()
 }
 
 /// Handle a single KSP connection over a TCP stream.
+#[allow(clippy::too_many_arguments)]
 pub async fn handle_connection(
     mut stream: TcpStream,
     addr: SocketAddr,
@@ -392,7 +396,13 @@ pub async fn handle_connection(
             PacketType::Data | PacketType::StreamData => {
                 let plaintext = session.decrypt_packet(&packet)?;
 
-                if packet.stream_id == 1 || (packet.stream_id == 4 && serde_json::from_slice::<serde_json::Value>(&plaintext).map(|v| v.get("op").is_some()).unwrap_or(false)) {
+                #[allow(clippy::collapsible_if)]
+                if packet.stream_id == 1
+                    || (packet.stream_id == 4
+                        && serde_json::from_slice::<serde_json::Value>(&plaintext)
+                            .map(|v| v.get("op").is_some())
+                            .unwrap_or(false))
+                {
                     if let Ok(req) = serde_json::from_slice::<serde_json::Value>(&plaintext)
                         && let Some(op) = req.get("op").and_then(|v| v.as_str())
                     {
@@ -413,7 +423,8 @@ pub async fn handle_connection(
                                     let _ = std::fs::File::create(sink_path);
                                 }
                                 stream_hasher = sha2::Sha256::new();
-                                let ack = serde_json::json!({"op": "FILE_ACK", "status": "receiving"});
+                                let ack =
+                                    serde_json::json!({"op": "FILE_ACK", "status": "receiving"});
                                 let (seq, nonce) = session.send_nonce.next();
                                 let resp = session.encrypt_packet(
                                     PacketType::Data,
@@ -434,7 +445,9 @@ pub async fn handle_connection(
                                     let mut b = [0u8; 8192];
                                     use std::io::Read;
                                     while let Ok(n) = f.read(&mut b) {
-                                        if n == 0 { break; }
+                                        if n == 0 {
+                                            break;
+                                        }
                                         h.update(&b[..n]);
                                     }
                                     hex::encode(h.finalize())
@@ -442,8 +455,10 @@ pub async fn handle_connection(
                                     hex::encode(stream_hasher.clone().finalize())
                                 };
 
-                                let expected = req.get("sha256").and_then(|v| v.as_str()).unwrap_or("");
-                                let verified = !expected.is_empty() && computed_sha256.eq_ignore_ascii_case(expected);
+                                let expected =
+                                    req.get("sha256").and_then(|v| v.as_str()).unwrap_or("");
+                                let verified = !expected.is_empty()
+                                    && computed_sha256.eq_ignore_ascii_case(expected);
 
                                 if !verified && !expected.is_empty() {
                                     warn!(
@@ -500,8 +515,7 @@ pub async fn handle_connection(
                                     .and_then(|p| std::fs::metadata(p).ok())
                                     .map(|m| m.len())
                                     .unwrap_or(0);
-                                let ack =
-                                    serde_json::json!({"op": "FILE_CHECKPOINT_RESP", "offset": actual_offset});
+                                let ack = serde_json::json!({"op": "FILE_CHECKPOINT_RESP", "offset": actual_offset});
                                 let (seq, nonce) = session.send_nonce.next();
                                 let resp = session.encrypt_packet(
                                     PacketType::Data,
@@ -609,7 +623,8 @@ pub async fn run_server(config: ServerConfig) -> Result<(), KspError> {
                 let auth = config.auth_config.clone();
 
                 tokio::spawn(async move {
-                    if let Err(e) = handle_connection(stream, addr, cert, caps, key, gw, sink, auth).await
+                    if let Err(e) =
+                        handle_connection(stream, addr, cert, caps, key, gw, sink, auth).await
                     {
                         warn!("Connection from {} failed: {}", addr, e);
                     }

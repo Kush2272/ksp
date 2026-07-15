@@ -132,8 +132,14 @@ async fn handle_ipc_request(
             std::process::exit(0);
         }
         "reload" => {
-            LogEntry::record("info", None, "Daemon configuration and settings reloaded via IPC command");
-            serde_json::to_string(&serde_json::json!({"status": "reloaded", "message": "Daemon configuration and settings reloaded via IPC"}))?
+            LogEntry::record(
+                "info",
+                None,
+                "Daemon configuration and settings reloaded via IPC command",
+            );
+            serde_json::to_string(
+                &serde_json::json!({"status": "reloaded", "message": "Daemon configuration and settings reloaded via IPC"}),
+            )?
         }
         "session_close" => {
             let uuid = req.get("uuid").and_then(|v| v.as_str()).unwrap_or("");
@@ -143,10 +149,16 @@ async fn handle_ipc_request(
             if snap.sessions.len() < orig {
                 snap.active_sessions = snap.sessions.len() as u32;
                 snap.save();
-                LogEntry::record("info", Some(uuid), "Session closed via daemon IPC control plane");
+                LogEntry::record(
+                    "info",
+                    Some(uuid),
+                    "Session closed via daemon IPC control plane",
+                );
                 serde_json::to_string(&serde_json::json!({"status": "closed", "uuid": uuid}))?
             } else {
-                serde_json::to_string(&serde_json::json!({"status": "error", "message": format!("Session UUID not found in daemon control plane: {}", uuid)}))?
+                serde_json::to_string(
+                    &serde_json::json!({"status": "error", "message": format!("Session UUID not found in daemon control plane: {}", uuid)}),
+                )?
             }
         }
         "stream_close" => {
@@ -155,10 +167,21 @@ async fn handle_ipc_request(
             if snap.active_streams > 0 {
                 snap.active_streams -= 1;
                 snap.save();
-                LogEntry::record("info", None, &format!("Stream ID {} closed via daemon IPC control plane", stream_id));
-                serde_json::to_string(&serde_json::json!({"status": "closed", "stream_id": stream_id}))?
+                LogEntry::record(
+                    "info",
+                    None,
+                    &format!(
+                        "Stream ID {} closed via daemon IPC control plane",
+                        stream_id
+                    ),
+                );
+                serde_json::to_string(
+                    &serde_json::json!({"status": "closed", "stream_id": stream_id}),
+                )?
             } else {
-                serde_json::to_string(&serde_json::json!({"status": "error", "message": "No active streams found in daemon control plane"}))?
+                serde_json::to_string(
+                    &serde_json::json!({"status": "error", "message": "No active streams found in daemon control plane"}),
+                )?
             }
         }
         "stream_list" => {

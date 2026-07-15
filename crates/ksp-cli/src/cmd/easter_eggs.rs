@@ -413,14 +413,24 @@ pub fn run_dance(json: bool) {
         thread::sleep(Duration::from_millis(300));
     }
 
-    println!("\n  {} Connection established! Streaming secure dance packet...\n", "✔".green().bold());
+    println!(
+        "\n  {} Connection established! Streaming secure dance packet...\n",
+        "✔".green().bold()
+    );
     thread::sleep(Duration::from_millis(500));
 
     // Try running `curl -s ascii.live/rick` directly in cmd/terminal!
-    println!("  {}", "─── Dancing over KSP (Ctrl+C to exit) ───".yellow().bold());
+    println!(
+        "  {}",
+        "─── Dancing over KSP (Ctrl+C to exit) ───".yellow().bold()
+    );
     println!();
 
-    let curl_cmd = if cfg!(target_os = "windows") { "curl.exe" } else { "curl" };
+    let curl_cmd = if cfg!(target_os = "windows") {
+        "curl.exe"
+    } else {
+        "curl"
+    };
     let status = std::process::Command::new(curl_cmd)
         .args(["-s", "ascii.live/rick"])
         .status();
@@ -468,8 +478,17 @@ pub fn run_dance(json: bool) {
             }
         }
 
-        println!("\n  {} {}\n", "🕺".yellow(), "You have been securely Rickrolled across all 9 layers of KSP!".green().bold());
-        println!("  {} {}\n", "🔗 Watch the full video:".cyan(), "https://www.youtube.com/watch?v=dQw4w9WgXcQ".underline());
+        println!(
+            "\n  {} {}\n",
+            "🕺".yellow(),
+            "You have been securely Rickrolled across all 9 layers of KSP!"
+                .green()
+                .bold()
+        );
+        println!(
+            "  {} {}\n",
+            "🔗 Watch the full video:".cyan(),
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ".underline()
+        );
     }
 }
-

@@ -114,7 +114,7 @@ async fn scan_reveal() -> io::Result<()> {
     println!(
         "  {}  {}",
         "Kush Secure Protocol".white().bold(),
-        format!("v{}", env!("CARGO_PKG_VERSION", "0.1.0")).dimmed()
+        format!("v{}", env!("CARGO_PKG_VERSION")).dimmed()
     );
     println!("  {}", "Experimental Secure Application Protocol".dimmed());
 
@@ -190,7 +190,7 @@ fn print_static_banner() {
     println!(
         "  {}  v{}",
         "Kush Secure Protocol".white().bold(),
-        env!("CARGO_PKG_VERSION", "0.1.0")
+        env!("CARGO_PKG_VERSION")
     );
     println!("  {}", "Experimental Secure Application Protocol".dimmed());
     println!();

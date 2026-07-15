@@ -334,11 +334,9 @@ pub fn run_replay_simulate(json: bool) {
     ]);
     println!("{t}");
     println!();
-    ui::summary_ok(
-        &format!(
-            "ReplayWindow bitmap (`ksp_transport::replay::ReplayWindow`) verified {} sequence numbers in {} μs overhead.",
-            total_packets, elapsed_us
-        ),
-    );
+    ui::summary_ok(&format!(
+        "ReplayWindow bitmap (`ksp_transport::replay::ReplayWindow`) verified {} sequence numbers in {} μs overhead.",
+        total_packets, elapsed_us
+    ));
     println!();
 }

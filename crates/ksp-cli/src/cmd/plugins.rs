@@ -50,7 +50,7 @@ pub fn run_list(json: bool) {
                     name: short_name.to_string(),
                     path: path.display().to_string(),
                     source: "User (~/.ksp/plugins)".to_string(),
-                    version: "v0.1.0 (local)".to_string(),
+                    version: format!("v{} (local)", env!("CARGO_PKG_VERSION")),
                 });
             }
         }

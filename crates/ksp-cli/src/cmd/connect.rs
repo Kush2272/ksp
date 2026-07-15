@@ -160,7 +160,10 @@ pub fn run_disconnect(json: bool) {
                 &serde_json::json!({"status": "disconnected", "local_tracked_sessions_cleared": count, "message": "Local tracked session state cleared"}),
             );
         } else {
-            ui::success(&format!("Cleared {} local tracked KSP session snapshot(s).", count));
+            ui::success(&format!(
+                "Cleared {} local tracked KSP session snapshot(s).",
+                count
+            ));
         }
     } else {
         if json {

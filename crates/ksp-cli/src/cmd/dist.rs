@@ -35,8 +35,14 @@ pub fn run_dist(target: &str, json: bool) {
             }));
         } else {
             ui::header("KSP Binary Release Packager");
-            ui::failure(&format!("Cross-compilation target `{}` not built yet.", target));
-            ui::info(&format!("Run `cargo build --release --target {}` before packaging with `ksp dist`.", target));
+            ui::failure(&format!(
+                "Cross-compilation target `{}` not built yet.",
+                target
+            ));
+            ui::info(&format!(
+                "Run `cargo build --release --target {}` before packaging with `ksp dist`.",
+                target
+            ));
         }
         return;
     }
@@ -57,6 +63,7 @@ pub fn run_dist(target: &str, json: bool) {
     }
     let found_path = candidate_paths.iter().find(|p| fs::metadata(p).is_ok());
 
+    #[allow(clippy::collapsible_if)]
     if let Some(path) = found_path {
         if let Ok(bytes) = fs::read(path) {
             let mut hasher = Sha256::new();
@@ -64,7 +71,11 @@ pub fn run_dist(target: &str, json: bool) {
             let sha = format!("{:x}", hasher.finalize());
             let size = bytes.len();
 
-            let ext = if path.extension().and_then(|e| e.to_str()) == Some("exe") { ".exe" } else { "" };
+            let ext = if path.extension().and_then(|e| e.to_str()) == Some("exe") {
+                ".exe"
+            } else {
+                ""
+            };
             let pkg_name = format!("ksp-v{}-{}{}", ksp_core::CURRENT_VERSION, t, ext);
 
             let _ = fs::write(&pkg_name, &bytes);
@@ -101,7 +112,10 @@ pub fn run_dist(target: &str, json: bool) {
                 sha.dimmed()
             );
             println!();
-            ui::summary_ok(&format!("Standalone release binary packaged successfully. Computed SHA-256: {}", sha));
+            ui::summary_ok(&format!(
+                "Standalone release binary packaged successfully. Computed SHA-256: {}",
+                sha
+            ));
             println!();
             return;
         }
@@ -114,7 +128,9 @@ pub fn run_dist(target: &str, json: bool) {
         }));
     } else {
         ui::header("KSP Binary Release Packager");
-        ui::failure("No compiled binary found. Run `cargo build --release` before running `ksp dist`.");
+        ui::failure(
+            "No compiled binary found. Run `cargo build --release` before running `ksp dist`.",
+        );
     }
     std::process::exit(1);
 }
@@ -152,8 +168,12 @@ pub fn run_update(check_only: bool, json: bool) {
         }));
     } else {
         ui::header("KSP CLI Update");
-        ui::failure("Automatic self-update (`ksp update`) requires a configured release mirror or update server.");
-        ui::info("To update your local build from source, run: cargo install --path crates/ksp-cli --force");
+        ui::failure(
+            "Automatic self-update (`ksp update`) requires a configured release mirror or update server.",
+        );
+        ui::info(
+            "To update your local build from source, run: cargo install --path crates/ksp-cli --force",
+        );
     }
     std::process::exit(1);
 }
@@ -320,8 +340,13 @@ pub fn run_uninstall(force: bool, json: bool) {
                 }
 
                 if schedule_cleanup {
-                    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
-                        let bin_path = std::path::PathBuf::from(home).join(".cargo").join("bin").join("ksp.exe");
+                    if let Some(home) =
+                        std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME"))
+                    {
+                        let bin_path = std::path::PathBuf::from(home)
+                            .join(".cargo")
+                            .join("bin")
+                            .join("ksp.exe");
                         let _ = std::process::Command::new("cmd")
                             .args([
                                 "/C",
@@ -338,7 +363,12 @@ pub fn run_uninstall(force: bool, json: bool) {
                         "Automated self-cleanup scheduled! ksp.exe will be deleted cleanly 2 seconds after this process exits.".green().bold()
                     );
                 } else {
-                    println!("  {}", "To remove the binary manually after closing your terminal, run:".yellow().bold());
+                    println!(
+                        "  {}",
+                        "To remove the binary manually after closing your terminal, run:"
+                            .yellow()
+                            .bold()
+                    );
                     println!("    {}", "cargo uninstall ksp-cli".cyan().bold());
                 }
             } else {
@@ -370,8 +400,21 @@ pub fn run_uninstall(force: bool, json: bool) {
     println!();
     ui::summary_ok("KSP CLI cleanup finished. Thank you for testing Kush Secure Protocol!");
     println!();
-    println!("  {}", "To reinstall KSP CLI anytime in the future, run:".cyan().bold());
-    println!("    {}", "irm https://raw.githubusercontent.com/Kush2272/ksp/main/install.ps1 | iex".white().bold());
-    println!("    {}", "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/install.sh | sh".dimmed());
+    println!(
+        "  {}",
+        "To reinstall KSP CLI anytime in the future, run:"
+            .cyan()
+            .bold()
+    );
+    println!(
+        "    {}",
+        "irm https://raw.githubusercontent.com/Kush2272/ksp/main/install.ps1 | iex"
+            .white()
+            .bold()
+    );
+    println!(
+        "    {}",
+        "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/install.sh | sh".dimmed()
+    );
     println!();
 }

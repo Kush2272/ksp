@@ -107,7 +107,10 @@ fn generate_cert() {
         return;
     }
 
-    let (certificate, signing_key) = ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://server.localhost", 365);
+    let (certificate, signing_key) = ksp_crypto::certificate::KspCertificate::generate_self_signed(
+        "ksp://server.localhost",
+        365,
+    );
     fs::write(cert_path, certificate.serialize()).ok();
     fs::write(key_path, signing_key.to_bytes()).ok();
 

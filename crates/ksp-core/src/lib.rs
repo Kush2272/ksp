@@ -18,7 +18,10 @@ pub mod types;
 pub mod version;
 
 pub use capability::Capabilities;
-pub use capture::{append_packet_to_pcap, get_capture_file, get_capture_pid_file, is_capture_active, record_pcap_if_active, PCAP_GLOBAL_HEADER};
+pub use capture::{
+    PCAP_GLOBAL_HEADER, append_packet_to_pcap, get_capture_file, get_capture_pid_file,
+    is_capture_active, record_pcap_if_active,
+};
 pub use constants::*;
 pub use error::{ErrorCode, KspError, Result};
 pub use packet::KspPacket;
