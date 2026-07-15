@@ -14,7 +14,7 @@
 
 <br />
 
-**A Production-Grade, Cryptographically Hardened Application-Layer Protocol & CLI Toolkit Built in Rust**
+**An Experimental, Cryptographically Hardened Application-Layer Protocol Suite & CLI Toolkit Built in Rust**
 
 [Official Website](https://www.kspprotocol.dev) · [All 50+ CLI Commands](https://www.kspprotocol.dev/docs/cli-reference) · [RFC Specification](spec/RFC-0001-ksp-v1.md) · [Security Policy](SECURITY.md) · [Contributing Guide](CONTRIBUTING.md)
 
@@ -28,13 +28,13 @@ Traditional protocols like HTTPS (HTTP/2 or HTTP/3 over TLS 1.3/QUIC) rely on ex
 
 **KSP (Kush Secure Protocol)** is an application-layer protocol and high-performance toolkit designed from scratch in Rust for low-latency, secure, multiplexed communication. It isolates transport, session state, AEAD encryption, and cryptographic handshakes into decoupled, highly verifiable components.
 
-Accompanied by **KSP CLI (`ksp-cli`)**, engineers and developers gain over 50 specialized commands to send packets, inspect wire frames, benchmark real-world throughput, transfer encrypted files, and dissect traffic natively or inside Wireshark.
+Accompanied by **KSP CLI (`ksp-cli`)**, engineers and developers gain over 35 specialized commands and utilities to send packets, inspect wire frames, benchmark transport throughput, transfer encrypted files, and dissect traffic natively or inside Wireshark.
 
 ---
 
 ## 🚀 Quick Install
 
-Install the official pre-built `ksp` binary globally onto your system using our verified one-liner scripts (hosted directly on `kspprotocol.dev` with zero external third-party dependencies):
+Install the official pre-built `ksp` binary globally onto your system using our one-liner installer scripts (hosted directly on `kspprotocol.dev` with zero external third-party dependencies):
 
 ### Windows (PowerShell)
 ```powershell
@@ -89,20 +89,31 @@ The `ksp` binary provides an all-in-one suite of protocol utilities:
 | :--- | :--- | :--- |
 | **Diagnostics & Health** | `ksp doctor`, `ksp ping`, `ksp info` | Verify network interfaces, firewall rules, and end-to-end connectivity. |
 | **Interactive REPL** | `ksp chat`, `ksp shell` | Stateful interactive terminal session with auto-completion and command history. |
-| **Secure File Transfer** | `ksp transfer send`, `ksp transfer receive` | Chunked, encrypted file transfer over KSP streams with real-time SHA256 verification. |
+| **Secure File Transfer** | `ksp transfer send`, `ksp transfer receive` | Chunked, encrypted file transfer over KSP streams with post-transfer SHA-256 verification. |
 | **Traffic & Packet Analysis** | `ksp capture`, `ksp inspect`, `ksp wireshark` | Capture binary packets, format hex dumps, and export Lua plugins for Wireshark. |
 | **Performance Benchmarking** | `ksp benchmark`, `ksp benchmark live` | Run latency jitter tests, throughput stress simulations, and ASCII histograms. |
-| **Live Visual Dashboard** | `ksp dashboard` | Real-time terminal monitoring of packet pipelines, bandwidth rates, and session pools. |
+| **Live Visual Dashboard** | `ksp dashboard` | Terminal monitoring of local daemon IPC snapshots, bandwidth rates, and session pools. |
 | **Proxy & Gateway Modes** | `ksp proxy`, `ksp gateway` | Launch reverse proxies and protocol bridges handling high-concurrency client pools. |
 | **Replay & Attack Testing** | `ksp replay`, `ksp attack` | Validate sliding-window replay protection by simulating out-of-order MITM frames. |
 | **Certificate Management** | `ksp cert gen`, `ksp cert verify` | Generate self-signed Ed25519/X25519 cryptographic identity pairs. |
 | **Protocol Specification** | `ksp rfc`, `ksp rfc search` | Search and inspect the official KSP RFC specification directly in your terminal. |
 
+### Authoritative Command Classification Table
+
+To guarantee strict operational honesty and clarity, all KSP CLI (`ksp`) commands are officially classified by their runtime verification status:
+
+| Classification | Commands | Description & Verification Status |
+| :--- | :--- | :--- |
+| **Real / Authoritative** | `doctor`, `ping`, `info`, `transfer send/receive/resume`, `capture start/stop/live`, `dashboard` (without `--demo`), `proxy`, `gateway`, `server`, `daemon`, `session list/inspect/close`, `stream list/close/reset`, `version`, `dist`, `update`, `cert gen/verify`, `rfc` | Reads and writes 100% authentic system state, live OS TCP/UDP sockets, real cryptographic AEAD computation, and verified SHA-256 binary payloads. |
+| **Demo / Simulated (`--demo`)** | `dashboard --demo`, `monitor --demo`, `replay simulate --demo` | Explicitly isolated simulation modes designed to demonstrate UI layouts and sparklines without requiring active network client connections. Emits `simulated: true` in JSON. |
+| **Experimental** | `chat`, `shell` (Interactive REPL) | Fully functional interactive terminal applications and multi-user chat prototypes utilizing X25519 DH key exchange and ChaCha20-Poly1305. |
+| **Educational / Unsupported** | `attack` (Replay window simulation), `journey` (Interactive tutorial) | Educational tools meant to visualize sliding-window replay protection mechanics (`1,024-bit bitmap`) or guide new developers through protocol concepts. |
+
 ---
 
 ## 📂 Examples Repository
 
-Explore runnable, production-grade templates inside the [`examples/`](examples/) directory:
+Explore runnable reference templates inside the [`examples/`](examples/) directory:
 - [`examples/chat/`](examples/chat/) — Multi-user encrypted chat server and terminal client.
 - [`examples/transfer/`](examples/transfer/) — High-speed chunked file sender and receiver with resume support.
 - [`examples/proxy/`](examples/proxy/) — Reverse proxy routing KSP packets across backend server instances.
@@ -128,7 +139,7 @@ We maintain strict governance and documentation standards:
 
 ## 🗺️ Project Roadmap
 
-- [x] **CLI Engine (`ksp-cli`)** — ✓ Complete (50+ commands & interactive shell)
+- [x] **CLI Engine (`ksp-cli`)** — ✓ Functional (35+ commands, tools & interactive shell)
 - [x] **Protocol Core (`ksp-core`, `ksp-crypto`)** — ✓ Complete (X25519, HKDF, ChaCha20/AES-GCM)
 - [x] **Rust & SDK Implementations** — ✓ Complete (Async Tokio client/server loops)
 - [x] **Developer Portal (`kspprotocol.dev`)** — ✓ Complete (Live interactive tools & reference)

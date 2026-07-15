@@ -72,6 +72,7 @@ impl KspClient {
         full_buf.extend_from_slice(&header_buf);
         full_buf.extend_from_slice(&payload_buf);
 
+        ksp_core::record_pcap_if_active(&full_buf);
         KspPacket::deserialize(&full_buf)
     }
 
@@ -81,6 +82,7 @@ impl KspClient {
         packet: &KspPacket,
     ) -> Result<(), KspError> {
         let bytes = packet.serialize();
+        ksp_core::record_pcap_if_active(&bytes);
         stream.write_all(&bytes).await?;
         stream.flush().await?;
         Ok(())

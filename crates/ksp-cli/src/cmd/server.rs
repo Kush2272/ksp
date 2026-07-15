@@ -67,6 +67,7 @@ async fn run_server_async(bind_addr: SocketAddr, json: bool) {
         signing_key,
         gateway_target: None,
         output_sink: None,
+        auth_config: ksp_server::AuthConfig::from_env(),
     };
 
     if let Err(e) = run_server(config).await {
@@ -82,69 +83,97 @@ pub fn run_status(json: bool) {
     if !json {
         ui::print_header("KSP Server Status");
     }
-    let port_in_use = std::net::TcpListener::bind("127.0.0.1:9876").is_err();
+    use std::io::{Read, Write};
+    let ipc_running = match std::net::TcpStream::connect("127.0.0.1:9899") {
+        Ok(mut s) => {
+            let _ = s.write_all(b"{\"cmd\":\"status\"}\n");
+            let mut buf = [0u8; 256];
+            s.read(&mut buf).is_ok()
+        }
+        Err(_) => false,
+    };
+    let snap = crate::cmd::telemetry::TelemetrySnapshot::fetch_current();
+    let is_running = ipc_running || snap.status == "running";
+
     if json {
         ui::json_output(&serde_json::json!({
-            "running": port_in_use,
+            "status": if is_running { "running" } else { "stopped" },
+            "daemon_ipc": ipc_running,
             "port": 9876,
         }));
-    } else if port_in_use {
-        ui::success("Server appears to be running on port 9876");
+    } else if is_running {
+        ui::success("KSP server/daemon appears to be active in local state");
     } else {
-        ui::info("No server detected on port 9876");
+        ui::info("No active KSP server daemon detected.");
         ui::info("Start one with: ksp server start");
     }
 }
 
 pub fn run_stop(json: bool) {
-    if !json {
-        ui::print_header("KSP Server Stop");
-        ui::info("Server stop requires the server to be running in a separate process.");
-        ui::info("Use Ctrl+C in the server terminal, or terminate the process.");
+    use std::io::{Read, Write};
+    if let Ok(mut s) = std::net::TcpStream::connect("127.0.0.1:9899") {
+        let _ = s.write_all(b"{\"cmd\":\"stop\"}\n");
+        let mut buf = [0u8; 256];
+        let _ = s.read(&mut buf);
+        let mut snap = crate::cmd::telemetry::TelemetrySnapshot::fetch_current();
+        snap.status = "stopped".into();
+        snap.save();
+        if json {
+            ui::json_output(&serde_json::json!({"status": "stopped", "message": "Signal sent to KSP daemon"}));
+        } else {
+            ui::print_header("KSP Server Stop");
+            ui::success("Termination signal sent to KSP background daemon.");
+        }
     } else {
-        ui::json_output(
-            &serde_json::json!({"status": "info", "message": "Use Ctrl+C to stop the server"}),
-        );
+        if json {
+            ui::json_output(&serde_json::json!({"status": "error", "message": "No active background KSP daemon found on IPC port 9899 to stop"}));
+        } else {
+            ui::print_header("KSP Server Stop");
+            ui::failure("No active background KSP daemon found on IPC port 9899 to stop.");
+            ui::info("If running interactively in foreground (`ksp server start`), use Ctrl+C in that terminal.");
+        }
+        std::process::exit(1);
     }
 }
 
 pub fn run_restart(port: u16, host: &str, verbose: bool, json: bool) {
+    use std::io::Write;
+    if let Ok(mut s) = std::net::TcpStream::connect("127.0.0.1:9899") {
+        let _ = s.write_all(b"{\"cmd\":\"stop\"}\n");
+        std::thread::sleep(std::time::Duration::from_millis(300));
+    }
     if !json {
         ui::header("KSP Server Restart");
-        println!(
-            "  {} Stopping any existing daemon instances...",
-            "🔄".yellow()
-        );
-    }
-    run_stop(json);
-    std::thread::sleep(std::time::Duration::from_millis(500));
-    if !json {
         println!("  {} Starting KSP Server daemon...", "✔".green().bold());
     }
     run_start(port, host, verbose, json);
 }
 
 pub fn run_reload(json: bool) {
-    if json {
-        println!(
-            "{}",
-            serde_json::json!({"status": "reloaded", "config": "ksp.toml", "active_connections_preserved": true})
-        );
-        return;
+    use std::io::{Read, Write};
+    if let Ok(mut s) = std::net::TcpStream::connect("127.0.0.1:9899") {
+        let _ = s.write_all(b"{\"cmd\":\"reload\"}\n");
+        let mut buf = [0u8; 256];
+        if let Ok(n) = s.read(&mut buf) {
+            let resp_str = String::from_utf8_lossy(&buf[..n]);
+            if resp_str.contains("\"reloaded\"") {
+                if json {
+                    ui::json_output(&serde_json::json!({"status": "reloaded", "message": "Configuration reloaded via daemon IPC"}));
+                } else {
+                    ui::header("KSP Server Hot-Reload");
+                    ui::success("Reload command successfully processed by KSP daemon via IPC.");
+                    println!();
+                }
+                return;
+            }
+        }
     }
 
-    ui::header("KSP Server Hot-Reload");
-    println!(
-        "  {} Validating updated `ksp.toml` configuration...",
-        "✔".green().bold()
-    );
-    println!(
-        "  {} Signaled running daemon process (SIGHUP / IPC event)",
-        "✔".green().bold()
-    );
-    println!(
-        "  {} Active cipher & replay tokens reloaded without dropping sessions!",
-        "✔".green().bold()
-    );
-    println!();
+    if json {
+        ui::json_output(&serde_json::json!({"status": "error", "message": "Cannot reload: no active background daemon listening on IPC port 9899"}));
+    } else {
+        ui::header("KSP Server Hot-Reload");
+        ui::failure("Cannot reload: no active background daemon listening on IPC port 9899.");
+    }
+    std::process::exit(1);
 }

@@ -3,114 +3,159 @@
 use crate::ui;
 use colored::Colorize;
 use std::fs;
+use std::path::PathBuf;
 
 pub fn run_dist(target: &str, json: bool) {
-    let t = if target.is_empty() {
+    use sha2::{Digest, Sha256};
+    let host_target = if cfg!(target_os = "windows") {
+        "x86_64-pc-windows-msvc"
+    } else if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+        "aarch64-apple-darwin"
+    } else if cfg!(target_os = "macos") {
+        "x86_64-apple-darwin"
+    } else if cfg!(target_arch = "aarch64") {
+        "aarch64-unknown-linux-gnu"
+    } else {
         "x86_64-unknown-linux-gnu"
+    };
+
+    let t = if target.is_empty() {
+        host_target
     } else {
         target
     };
-    let pkg_name = format!("ksp-v{}-{}.tar.gz", ksp_core::CURRENT_VERSION, t);
-    let sha = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
-    if json {
-        println!(
-            "{}",
-            serde_json::json!({
-                "status": "packaged",
-                "version": ksp_core::CURRENT_VERSION.to_string(),
-                "target": t,
-                "package_file": pkg_name,
-                "sha256": sha
-            })
-        );
+    if !target.is_empty() && target != host_target {
+        if json {
+            ui::json_output(&serde_json::json!({
+                "status": "cross_target_not_built",
+                "requested_target": target,
+                "host_target": host_target,
+                "message": format!("Cross-compilation target {} not built yet. Run `cargo build --release --target {}` first.", target, target)
+            }));
+        } else {
+            ui::header("KSP Binary Release Packager");
+            ui::failure(&format!("Cross-compilation target `{}` not built yet.", target));
+            ui::info(&format!("Run `cargo build --release --target {}` before packaging with `ksp dist`.", target));
+        }
         return;
     }
 
-    ui::header("KSP Binary Release Packager");
-    println!(
-        "  {} Compiling optimized `--release` profile for target `{}`...",
-        "🔄".yellow(),
-        t.cyan()
-    );
-    println!(
-        "  {} Stripping debug symbols and compressing via `tar + zstd`...",
-        "✔".green().bold()
-    );
-    println!(
-        "  {} Generated archive: {} (2.8 MB)",
-        "✔".green().bold(),
-        pkg_name.yellow().bold()
-    );
-    println!(
-        "  {} SHA-256 Checksum:  {}",
-        "✔".green().bold(),
-        sha.dimmed()
-    );
-    println!();
-    fs::write("checksums.txt", format!("{}  {}\n", sha, pkg_name)).ok();
-    ui::summary_ok("Release bundle generated successfully with verified SHA-256 sum.");
-    println!();
+    // Look for real built binary across workspace root, current_exe, and crate subdirectories
+    let mut candidate_paths = vec![
+        PathBuf::from("target/release/ksp.exe"),
+        PathBuf::from("target/release/ksp"),
+        PathBuf::from("target/debug/ksp.exe"),
+        PathBuf::from("target/debug/ksp"),
+        PathBuf::from("../../target/release/ksp.exe"),
+        PathBuf::from("../../target/release/ksp"),
+        PathBuf::from("../../target/debug/ksp.exe"),
+        PathBuf::from("../../target/debug/ksp"),
+    ];
+    if let Ok(exe) = std::env::current_exe() {
+        candidate_paths.push(exe);
+    }
+    let found_path = candidate_paths.iter().find(|p| fs::metadata(p).is_ok());
+
+    if let Some(path) = found_path {
+        if let Ok(bytes) = fs::read(path) {
+            let mut hasher = Sha256::new();
+            hasher.update(&bytes);
+            let sha = format!("{:x}", hasher.finalize());
+            let size = bytes.len();
+
+            let ext = if path.extension().and_then(|e| e.to_str()) == Some("exe") { ".exe" } else { "" };
+            let pkg_name = format!("ksp-v{}-{}{}", ksp_core::CURRENT_VERSION, t, ext);
+
+            let _ = fs::write(&pkg_name, &bytes);
+            let _ = fs::write("checksums.txt", format!("{}  {}\n", sha, pkg_name));
+
+            if json {
+                ui::json_output(&serde_json::json!({
+                    "status": "packaged_binary",
+                    "version": ksp_core::CURRENT_VERSION.to_string(),
+                    "target": t,
+                    "package_file": pkg_name,
+                    "size_bytes": size,
+                    "sha256": sha
+                }));
+                return;
+            }
+
+            ui::header("KSP Binary Release Packager");
+            println!(
+                "  {} Found binary at `{}` for target `{}`...",
+                "✔".green().bold(),
+                path.display().to_string().cyan(),
+                t.cyan()
+            );
+            println!(
+                "  {} Packaged standalone binary artifact: {} ({})",
+                "✔".green().bold(),
+                pkg_name.yellow().bold(),
+                ui::format_bytes(size as u64)
+            );
+            println!(
+                "  {} SHA-256 Checksum:  {}",
+                "✔".green().bold(),
+                sha.dimmed()
+            );
+            println!();
+            ui::summary_ok(&format!("Standalone release binary packaged successfully. Computed SHA-256: {}", sha));
+            println!();
+            return;
+        }
+    }
+
+    if json {
+        ui::json_output(&serde_json::json!({
+            "status": "error",
+            "message": "No compiled binary found. Run `cargo build --release` before running `ksp dist`."
+        }));
+    } else {
+        ui::header("KSP Binary Release Packager");
+        ui::failure("No compiled binary found. Run `cargo build --release` before running `ksp dist`.");
+    }
+    std::process::exit(1);
 }
 
 pub fn run_update(check_only: bool, json: bool) {
-    let latest = "1.0.0";
     let current = ksp_core::CURRENT_VERSION.to_string();
-    let is_latest = current == latest;
 
-    if json {
-        println!(
-            "{}",
-            serde_json::json!({
+    if check_only {
+        if json {
+            ui::json_output(&serde_json::json!({
                 "current_version": current,
-                "latest_version": latest,
-                "up_to_date": is_latest
-            })
-        );
+                "update_mirror_configured": false,
+                "update_checked": false,
+                "status": "no_remote_mirror_configured"
+            }));
+        } else {
+            ui::header("KSP CLI Version & Update Checker");
+            ui::kv("Current Version", &format!("v{}", current));
+            ui::kv("Remote Mirror", "Unconfigured (Local build only)");
+            println!();
+            println!(
+                "  {} No remote update mirror configured; using local workspace build (`v{}`).",
+                "ℹ".blue(),
+                current
+            );
+            println!();
+        }
         return;
     }
 
-    ui::header("KSP CLI Version & Update Checker");
-    ui::kv("Current Version", &format!("v{}", current));
-    ui::kv(
-        "Latest Version",
-        &format!("v{} (GitHub Release Edge)", latest),
-    );
-    println!();
-
-    if is_latest {
-        println!(
-            "  {} You are running the latest version of KSP CLI!",
-            "✔".green().bold()
-        );
-    } else if check_only {
-        println!(
-            "  {} A new version is available (`v{}`). Run `ksp update` to install.",
-            "⚠".yellow().bold(),
-            latest
-        );
+    if json {
+        ui::json_output(&serde_json::json!({
+            "status": "error",
+            "message": "Automatic self-update (`ksp update`) requires a configured release mirror or update server"
+        }));
     } else {
-        println!(
-            "  {} Downloading KSP CLI v{} binary from release mirror...",
-            "🔄".yellow(),
-            latest
-        );
-        std::thread::sleep(std::time::Duration::from_millis(300));
-        println!(
-            "  {} Verifying SHA-256 cryptographic signature against ed25519 root key...",
-            "✔".green().bold()
-        );
-        println!(
-            "  {} Replaced executable binary in-place (`ksp.exe`).",
-            "✔".green().bold()
-        );
-        println!();
-        ui::summary_ok(&format!(
-            "Successfully updated KSP CLI from v{} to v{}!",
-            current, latest
-        ));
+        ui::header("KSP CLI Update");
+        ui::failure("Automatic self-update (`ksp update`) requires a configured release mirror or update server.");
+        ui::info("To update your local build from source, run: cargo install --path crates/ksp-cli --force");
     }
-    println!();
+    std::process::exit(1);
 }
 
 pub fn run_install_script(json: bool) {
@@ -181,7 +226,8 @@ pub fn run_uninstall(force: bool, json: bool) {
         println!(
             "{}",
             serde_json::json!({
-                "status": "uninstallation_initiated",
+                "status": "uninstall_instructions",
+                "action_required": true,
                 "windows_uninstaller": "irm https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.ps1 | iex",
                 "linux_macos_uninstaller": "curl -fsSL https://raw.githubusercontent.com/Kush2272/ksp/main/uninstall.sh | sh",
                 "cargo_uninstaller": "cargo uninstall ksp-cli"

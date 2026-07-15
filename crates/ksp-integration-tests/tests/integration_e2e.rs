@@ -380,6 +380,7 @@ async fn test_client_server_sdk_roundtrip() {
         signing_key: key,
         gateway_target: None,
         output_sink: None,
+        auth_config: ksp_server::AuthConfig::from_env(),
     };
 
     let server_task = tokio::spawn(async move {
@@ -427,6 +428,7 @@ async fn test_concurrent_multi_stream_transfer() {
         signing_key: key,
         gateway_target: None,
         output_sink: None,
+        auth_config: ksp_server::AuthConfig::from_env(),
     };
 
     let server_task = tokio::spawn(async move {
@@ -498,6 +500,7 @@ async fn test_proxy_and_gateway_tunnel() {
         signing_key: key,
         gateway_target: Some(http_addr),
         output_sink: None,
+        auth_config: ksp_server::AuthConfig::from_env(),
     };
 
     let gateway_task = tokio::spawn(async move {

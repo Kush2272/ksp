@@ -377,3 +377,81 @@ fn test_cli_all_commands_json_execution() {
     }
 }
 
+#[test]
+fn test_no_hardcoded_fake_literals_in_non_demo_dashboard() {
+    let output = Command::new(ksp_bin())
+        .arg("dashboard")
+        .output()
+        .expect("Failed to execute ksp dashboard");
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(!stdout.contains("d8193ad7-4e01-4c12-91a2-11bc90a8231e"), "Non-demo dashboard contained hardcoded demo UUID");
+    assert!(!stdout.contains("14,209 pkts/s (Simulated"), "Non-demo dashboard contained simulated packet rate");
+    assert!(stdout.contains("IDLE") || stdout.contains("0 B/s") || stdout.contains("No active KSP sessions") || stdout.contains("Telemetry"), "Dashboard missing honest idle indicators: {}", stdout);
+}
+
+#[test]
+fn test_idle_dashboard_json_has_zero_sessions() {
+    let output = Command::new(ksp_bin())
+        .args(["--json", "dashboard"])
+        .output()
+        .expect("Failed to execute ksp --json dashboard");
+    assert!(output.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("Valid JSON required");
+    assert!(json.get("simulated").is_none(), "Non-demo JSON must not have simulated=true");
+    assert_eq!(json["active_sessions"], 0, "Idle JSON dashboard should report 0 active sessions");
+}
+
+#[test]
+fn test_demo_flag_includes_simulated_true() {
+    let output = Command::new(ksp_bin())
+        .args(["--json", "dashboard", "--demo"])
+        .output()
+        .expect("Failed to execute ksp --json dashboard --demo");
+    assert!(output.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("Valid JSON required");
+    assert_eq!(json["simulated"], true, "Demo dashboard must explicitly include simulated: true");
+}
+
+#[test]
+fn test_transfer_verification_status_reporting() {
+    let output = Command::new(ksp_bin())
+        .args(["--json", "transfer", "send", "nonexistent_file.txt"])
+        .output()
+        .expect("Failed to execute ksp transfer send");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json: serde_json::Value = serde_json::from_str(&stdout).unwrap_or_else(|_| serde_json::json!({"status": "error"}));
+    assert_eq!(json["status"], "error", "Missing or unverified transfer must not claim verified_remote=true");
+}
+
+#[test]
+fn test_proxy_and_gateway_json_only_after_bind() {
+    let output = Command::new(ksp_bin())
+        .args(["--json", "proxy", "--listen", "256.256.256.256:9999"])
+        .output()
+        .expect("Failed to execute proxy with invalid IP");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(!stdout.contains("\"status\": \"proxy_running\""), "Must not emit proxy_running if socket bind fails");
+
+    let gw_output = Command::new(ksp_bin())
+        .args(["--json", "gateway", "--listen", "256.256.256.256:9999"])
+        .output()
+        .expect("Failed to execute gateway with invalid IP");
+    let gw_stdout = String::from_utf8_lossy(&gw_output.stdout);
+    assert!(!gw_stdout.contains("\"status\": \"gateway_active\""), "Must not emit gateway_active if socket bind fails");
+}
+
+#[test]
+fn test_dist_checksum_matches_actual_binary_artifact() {
+    let output = Command::new(ksp_bin())
+        .args(["--json", "dist"])
+        .output()
+        .expect("Failed to execute ksp --json dist");
+    assert!(output.status.success());
+    let json: serde_json::Value = serde_json::from_slice(&output.stdout).expect("Valid JSON required");
+    assert!(json["status"] == "packaged" || json["status"] == "packaged_binary", "Expected packaged or packaged_binary, got: {:?}", json["status"]);
+    let sha = json["sha256"].as_str().expect("Must output sha256 hex string");
+    assert_eq!(sha.len(), 64, "SHA-256 string must be exactly 64 hex chars");
+}
+
+

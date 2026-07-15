@@ -107,19 +107,17 @@ fn generate_cert() {
         return;
     }
 
-    let dummy_cert = "-----BEGIN KSP CERTIFICATE-----\nMIICXAIBAAKCAQEA...[Diagnostic Diagnostic Key]...\n-----END KSP CERTIFICATE-----\n";
-    let dummy_key = "-----BEGIN KSP PRIVATE KEY-----\nMIIEvgIBADANBgkq...[Diagnostic Private Key]...\n-----END KSP PRIVATE KEY-----\n";
-
-    fs::write(cert_path, dummy_cert).ok();
-    fs::write(key_path, dummy_key).ok();
+    let (certificate, signing_key) = ksp_crypto::certificate::KspCertificate::generate_self_signed("ksp://server.localhost", 365);
+    fs::write(cert_path, certificate.serialize()).ok();
+    fs::write(key_path, signing_key.to_bytes()).ok();
 
     println!(
-        "  {} Generated X.509/Ed25519 identity key -> {}",
+        "  {} Generated real KSP Ed25519 private key -> {}",
         "✔".green().bold(),
         "certs/server.key".white().bold()
     );
     println!(
-        "  {} Generated diagnostic public certificate -> {}",
+        "  {} Generated real KSP Ed25519 self-signed certificate -> {}",
         "✔".green().bold(),
         "certs/server.cert".white().bold()
     );
@@ -209,22 +207,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn generate_packet_sample() {
     let path = Path::new("sample_packet.bin");
-    let dummy_packet = [
-        0x01, 0x02, 0x00, 0x00, // Version 1, Type Data, Flags 0
-        0x11, 0x22, 0x33, 0x44, // Session ID
-        0x00, 0x00, 0x00, 0x01, // Stream ID #1
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x12, // Sequence #1042
-        0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22, // Nonce
-        0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x4B, 0x53, 0x50, // Payload: "Hello KSP"
-        0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE,
-        0xFF, // AEAD Tag
-    ];
+    let pkt = ksp_core::packet::KspPacket::new_handshake(
+        ksp_core::PacketType::ClientHello,
+        b"Hello KSP Sample Packet".to_vec(),
+    );
+    let serialized = pkt.serialize();
 
-    match fs::write(path, dummy_packet) {
+    match fs::write(path, &serialized) {
         Ok(_) => {
             println!(
-                "  {} Generated binary packet -> {}",
+                "  {} Generated verifiable binary packet frame ({} bytes) -> {}",
                 "✔".green().bold(),
+                serialized.len(),
                 "sample_packet.bin".white().bold()
             );
             println!(

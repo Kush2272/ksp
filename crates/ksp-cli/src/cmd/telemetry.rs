@@ -58,7 +58,12 @@ impl TelemetrySnapshot {
                 return snap;
             }
         }
-        Self::read()
+        let mut snap = Self::read();
+        snap.status = "offline".to_string();
+        snap.active_sessions = 0;
+        snap.active_streams = 0;
+        snap.sessions.clear();
+        snap
     }
 
     pub fn save(&self) {
@@ -70,21 +75,8 @@ impl TelemetrySnapshot {
     pub fn init_server() {
         let mut snap = Self::read();
         snap.status = "running".into();
-        snap.uptime_secs = 1;
-        if snap.active_sessions == 0 && snap.sessions.is_empty() {
-            snap.active_sessions = 1;
-            snap.active_streams = 4;
-            snap.sessions.push(SessionInfo {
-                uuid: "d8193ad7-4e01-4c12-91a2-11bc90a8231e".into(),
-                cipher: "AES-256-GCM".into(),
-                streams: 4,
-                bytes_transferred: 1048576, // 1 MB initial setup
-                rtt_ms: 0.41,
-                status: "ACTIVE ✔".into(),
-            });
-            snap.total_packets = 128;
-            snap.total_bytes_sent = 524288;
-            snap.total_bytes_recv = 524288;
+        if snap.uptime_secs == 0 {
+            snap.uptime_secs = 1;
         }
         snap.save();
     }
@@ -93,13 +85,13 @@ impl TelemetrySnapshot {
         let mut snap = Self::read();
         snap.status = "running".into();
         snap.active_sessions = snap.active_sessions.saturating_add(1);
-        snap.active_streams = snap.active_streams.saturating_add(4);
+        snap.active_streams = snap.active_streams.saturating_add(1);
         snap.sessions.push(SessionInfo {
             uuid: uuid.to_string(),
             cipher: cipher.to_string(),
-            streams: 4,
+            streams: 1,
             bytes_transferred: 0,
-            rtt_ms: 0.38,
+            rtt_ms: 0.0,
             status: "ACTIVE ✔".into(),
         });
         snap.save();

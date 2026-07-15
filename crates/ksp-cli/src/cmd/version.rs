@@ -12,10 +12,10 @@ pub fn run(verbose: u8, json: bool) {
             "homepage": "https://www.kspprotocol.dev",
         });
         if verbose > 0 {
-            info["commit"] = serde_json::json!("7a91c21");
-            info["branch"] = serde_json::json!("main");
-            info["built"] = serde_json::json!("2026-07-13");
-            info["compiler"] = serde_json::json!("rustc 1.96.1");
+            info["commit"] = serde_json::json!(option_env!("KSP_BUILD_COMMIT").unwrap_or("unknown"));
+            info["branch"] = serde_json::json!(option_env!("KSP_BUILD_BRANCH").unwrap_or("main"));
+            info["built"] = serde_json::json!(option_env!("KSP_BUILD_DATE").unwrap_or("unknown"));
+            info["compiler"] = serde_json::json!(option_env!("KSP_BUILD_RUSTC").unwrap_or("unknown"));
             info["features"] = serde_json::json!([
                 "AES",
                 "ChaCha20",
@@ -35,10 +35,10 @@ pub fn run(verbose: u8, json: bool) {
     ui::kv("Protocol", &format!("KSP v{}", ksp_core::CURRENT_VERSION));
 
     if verbose > 0 {
-        ui::kv("Commit", "7a91c21");
-        ui::kv("Branch", "main");
-        ui::kv("Built", "2026-07-13");
-        ui::kv("Compiler", "rustc 1.96.1");
+        ui::kv("Commit", option_env!("KSP_BUILD_COMMIT").unwrap_or("unknown"));
+        ui::kv("Branch", option_env!("KSP_BUILD_BRANCH").unwrap_or("main"));
+        ui::kv("Built", option_env!("KSP_BUILD_DATE").unwrap_or("unknown"));
+        ui::kv("Compiler", option_env!("KSP_BUILD_RUSTC").unwrap_or("unknown"));
         ui::kv(
             "Platform",
             &format!("{} {}", std::env::consts::OS, std::env::consts::ARCH),

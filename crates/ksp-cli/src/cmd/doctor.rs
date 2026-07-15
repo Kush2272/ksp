@@ -93,12 +93,12 @@ pub fn run(fix: bool, json: bool) {
     checks.push(Diagnostic::pass(
         "CLI Version",
         5,
-        "v0.1.0 (KSP Protocol Suite)",
+        &format!("v{} (KSP Protocol Suite)", env!("CARGO_PKG_VERSION")),
     ));
     checks.push(Diagnostic::pass(
         "Protocol Version",
         5,
-        "KSP/2.4 (RFC-001 Compliant)",
+        &format!("KSP/{} (RFC-0001)", ksp_core::CURRENT_VERSION),
     ));
 
     // Check if local KSP server is active on TCP 9876

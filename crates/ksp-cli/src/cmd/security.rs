@@ -252,49 +252,78 @@ fn simulate_corruption_attack() {
 
 /// `ksp replay simulate` — High-concurrency sliding window benchmark.
 pub fn run_replay_simulate(json: bool) {
+    use ksp_transport::replay::ReplayWindow;
+    use std::time::Instant;
+
+    let mut window = ReplayWindow::new();
+    let total_packets = 1024u64;
+    let mut accepted = 0u64;
+    let mut rejected = 0u64;
+
+    let start = Instant::now();
+    for i in 1..=total_packets {
+        // Inject ~15% duplicate sequence number replay attempts
+        let seq = if i % 7 == 0 && i > 5 { i - 3 } else { i };
+        match window.check_and_update(seq) {
+            Ok(_) => accepted += 1,
+            Err(_) => rejected += 1,
+        }
+    }
+    let elapsed = start.elapsed();
+    let elapsed_us = elapsed.as_micros();
+
+    let accepted_pct = (accepted as f64 / total_packets as f64) * 100.0;
+    let rejected_pct = (rejected as f64 / total_packets as f64) * 100.0;
+
     if json {
         println!(
             "{}",
             serde_json::json!({
-                "simulation_packets": 1024,
-                "accepted_packets": 870,
-                "replays_rejected": 154,
+                "simulation_packets": total_packets,
+                "accepted_packets": accepted,
+                "replays_rejected": rejected,
                 "window_size_bits": 1024,
+                "elapsed_micros": elapsed_us,
                 "accuracy": 100.0
             })
         );
         return;
     }
 
-    ui::header("KSP Replay Protection Sliding Window Simulation (1,024 Packets)");
+    ui::header("KSP Replay Protection Window Simulation (1,024 Packets)");
     println!(
-        "  {} Simulating high-concurrency packet stream with ~15% injected replay attacks...",
+        "  {} Simulating high-concurrency packet stream through live `ReplayWindow` with injected replay attacks...",
         "🔄".yellow()
     );
     println!();
 
-    let pb = ui::progress_bar(1024, "Simulating Window");
-    for i in 1..=1024 {
+    let pb = ui::progress_bar(total_packets, "Simulating Window");
+    for i in 1..=total_packets {
         if i % 10 == 0 {
             pb.set_position(i);
-            thread::sleep(Duration::from_millis(15));
+            thread::sleep(Duration::from_millis(5));
         }
     }
     pb.finish_with_message("Done");
     println!();
 
     let mut t = ui::table(&["Metric", "Count", "Percentage", "Status"]);
-    t.add_row(vec!["Total Stream Packets", "1,024", "100.0%", "Processed"]);
+    t.add_row(vec![
+        "Total Stream Packets",
+        &format!("{}", total_packets),
+        "100.0%",
+        "Processed",
+    ]);
     t.add_row(vec![
         "Valid Unique Packets Accepted",
-        "870",
-        "85.0%",
+        &format!("{}", accepted),
+        &format!("{:.1}%", accepted_pct),
         "Delivered ✔",
     ]);
     t.add_row(vec![
         "Replay Attempts Detected & Dropped",
-        "154",
-        "15.0%",
+        &format!("{}", rejected),
+        &format!("{:.1}%", rejected_pct),
         "Blocked 🛡",
     ]);
     t.add_row(vec![
@@ -306,7 +335,10 @@ pub fn run_replay_simulate(json: bool) {
     println!("{t}");
     println!();
     ui::summary_ok(
-        "Sliding window bitmap successfully protected session state with 0 μs overhead.",
+        &format!(
+            "ReplayWindow bitmap (`ksp_transport::replay::ReplayWindow`) verified {} sequence numbers in {} μs overhead.",
+            total_packets, elapsed_us
+        ),
     );
     println!();
 }

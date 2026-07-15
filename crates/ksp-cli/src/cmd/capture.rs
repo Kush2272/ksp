@@ -6,60 +6,11 @@
 use crate::ui;
 use colored::Colorize;
 use ksp_core::packet::KspPacket;
-use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Write};
-use std::path::PathBuf;
-use std::time::{SystemTime, UNIX_EPOCH};
+pub use ksp_core::{append_packet_to_pcap, get_capture_file, get_capture_pid_file, PCAP_GLOBAL_HEADER};
+use std::fs::{self, File};
+use std::io::Read;
 
-/// Standard PCAP 2.4 Global Header (24 bytes, Little-Endian)
-/// Magic: 0xa1b2c3d4 | Version: 2.4 | Snaplen: 65535 | Link-type: 147 (USER0 / Custom Protocol)
-const PCAP_GLOBAL_HEADER: [u8; 24] = [
-    0xd4, 0xc3, 0xb2, 0xa1, // Magic number (0xa1b2c3d4)
-    0x02, 0x00, // Major version 2
-    0x04, 0x00, // Minor version 4
-    0x00, 0x00, 0x00, 0x00, // Thiszone
-    0x00, 0x00, 0x00, 0x00, // Sigfigs
-    0xff, 0xff, 0x00, 0x00, // Snaplen (65535)
-    0x93, 0x00, 0x00, 0x00, // Network / DLT (147 = USER0)
-];
-
-fn get_capture_file() -> PathBuf {
-    std::env::temp_dir().join("ksp_capture.pcap")
-}
-
-fn get_capture_pid_file() -> PathBuf {
-    std::env::temp_dir().join("ksp_capture.pid")
-}
-
-/// Append a KSP packet with a 16-byte PCAP Packet Header to the PCAP file.
-pub fn append_packet_to_pcap(packet_bytes: &[u8]) -> std::io::Result<()> {
-    let pcap_path = get_capture_file();
-    if !pcap_path.exists() {
-        fs::write(&pcap_path, PCAP_GLOBAL_HEADER)?;
-    }
-
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(pcap_path)?;
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default();
-    let ts_sec = now.as_secs() as u32;
-    let ts_usec = now.subsec_micros();
-    let incl_len = packet_bytes.len() as u32;
-    let orig_len = incl_len;
-
-    file.write_all(&ts_sec.to_le_bytes())?;
-    file.write_all(&ts_usec.to_le_bytes())?;
-    file.write_all(&incl_len.to_le_bytes())?;
-    file.write_all(&orig_len.to_le_bytes())?;
-    file.write_all(packet_bytes)?;
-    file.flush()?;
-    Ok(())
-}
-
-pub fn run_start(port: u16, json: bool) {
+pub fn run_start(_port: u16, json: bool) {
     let pcap_path = get_capture_file();
     let pid_path = get_capture_pid_file();
 
@@ -75,20 +26,13 @@ pub fn run_start(port: u16, json: bool) {
     crate::cmd::telemetry::LogEntry::record(
         "info",
         None,
-        &format!("PCAP capture initialized on port {} (DLT 147 USER0)", port),
+        &format!("PCAP capture hook initialized for KSP traffic (DLT 147 USER0)"),
     );
-
-    // Append a synthetic or recorded handshake capture frame to initialize buffer
-    let sample_pkt = KspPacket::new_handshake(
-        ksp_core::types::PacketType::ClientHello,
-        b"capture_start".to_vec(),
-    );
-    let _ = append_packet_to_pcap(&sample_pkt.serialize());
 
     if json {
         ui::json_output(&serde_json::json!({
-            "status": "started",
-            "port": port,
+            "status": "recording_enabled",
+            "capture_mode": "application-layer buffer (records ksp connect / transfer packets across the workspace)",
             "pcap_version": "2.4",
             "dlt": 147,
             "file": pcap_path.display().to_string()
@@ -98,16 +42,16 @@ pub fn run_start(port: u16, json: bool) {
 
     ui::print_header("KSP Packet Capture (PCAP 2.4)");
     ui::kv("Capture Output", &pcap_path.display().to_string());
+    ui::kv("Recording Hook", "ksp_core::record_pcap_if_active (application-layer)");
     ui::kv("Link-Layer Header", "DLT 147 (USER0 / KSP Protocol Frame)");
     ui::kv("Snaplen", "65,535 bytes");
     println!();
     println!(
-        "  {} Started live PCAP 2.4 recording engine on port {}",
-        "✔".green().bold(),
-        port.to_string().cyan()
+        "  {} Initialized live KSP PCAP 2.4 application-layer capture file (no OS-level capture hook)",
+        "✔".green().bold()
     );
     println!(
-        "  {} All KSP sessions & transfers will append PCAP records.",
+        "  {} Packets sent or received via `ksp connect` and `ksp transfer` across the workspace will be recorded automatically.",
         "ℹ".blue()
     );
     println!(

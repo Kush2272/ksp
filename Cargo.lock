@@ -903,7 +903,7 @@ dependencies = [
 
 [[package]]
 name = "ksp-cli"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "bytes",
  "chrono",
@@ -939,7 +939,7 @@ dependencies = [
 
 [[package]]
 name = "ksp-client"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "bytes",
  "clap",
@@ -957,7 +957,7 @@ dependencies = [
 
 [[package]]
 name = "ksp-core"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "bitflags",
  "bytes",
@@ -967,7 +967,7 @@ dependencies = [
 
 [[package]]
 name = "ksp-crypto"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "aes-gcm",
  "chacha20poly1305",
@@ -984,7 +984,7 @@ dependencies = [
 
 [[package]]
 name = "ksp-handshake"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "hmac",
  "ksp-core",
@@ -997,7 +997,7 @@ dependencies = [
 
 [[package]]
 name = "ksp-integration-tests"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "criterion",
  "ed25519-dalek",
@@ -1015,11 +1015,12 @@ dependencies = [
 
 [[package]]
 name = "ksp-server"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "bytes",
  "clap",
  "ed25519-dalek",
+ "hex",
  "ksp-core",
  "ksp-crypto",
  "ksp-handshake",
@@ -1027,6 +1028,7 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
+ "sha2",
  "tokio",
  "tokio-util",
  "tracing",
@@ -1036,7 +1038,7 @@ dependencies = [
 
 [[package]]
 name = "ksp-transport"
-version = "0.1.0"
+version = "1.0.1"
 dependencies = [
  "ksp-core",
  "ksp-crypto",

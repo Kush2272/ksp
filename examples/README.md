@@ -9,7 +9,7 @@ Welcome to the **Kush Secure Protocol (KSP)** examples directory! This collectio
 | Directory | Name | Description |
 | :--- | :--- | :--- |
 | **[`chat/`](chat/)** | **Encrypted Multi-User Chat** | Full-duplex terminal chat room utilizing KSP session management and X25519 DH key exchange. |
-| **[`transfer/`](transfer/)** | **Resumable File Transfer** | High-speed chunked file transfer with real-time SHA256 integrity verification over KSP multiplexed streams. |
+| **[`transfer/`](transfer/)** | **Resumable File Transfer** | High-speed chunked file transfer with post-transfer SHA-256 integrity verification over KSP multiplexed streams. |
 | **[`proxy/`](proxy/)** | **Secure Reverse Proxy** | Load-balancing KSP reverse proxy forwarding encrypted client frames across multiple backend worker pools. |
 | **[`gateway/`](gateway/)** | **HTTP / WebSocket Bridge** | Protocol bridge translating incoming WebSocket frames into low-latency KSP binary packets. |
 | **[`dashboard/`](dashboard/)** | **Telemetry Exporter** | Custom telemetry harness reporting live bandwidth rates, latency jitter, and stream health into `ksp dashboard`. |

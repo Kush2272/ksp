@@ -8,36 +8,37 @@ use std::time::Duration;
 
 pub fn run_monitor(demo: bool, json: bool) {
     let snap = TelemetrySnapshot::fetch_current();
-    let is_active =
-        demo || snap.active_sessions > 0 || snap.total_packets > 0 || snap.status == "running";
+    let has_traffic = snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
+    let is_active = demo || has_traffic;
 
     let active_sessions = if demo { 14 } else { snap.active_sessions };
     let packets_sec = if demo {
-        "14,209 pkts/s".to_string()
-    } else if is_active {
-        format!("{} pkts", snap.total_packets)
+        "14,209 pkts/s (Simulated --demo)".to_string()
+    } else if has_traffic {
+        format!("{} pkts/s", snap.total_packets / snap.uptime_secs.max(1))
     } else {
-        "Collecting...".to_string()
+        "0 pkts/s".to_string()
     };
     let avg_rtt = if demo {
-        "0.41 ms".to_string()
-    } else if is_active {
-        "0.38 ms".to_string()
+        "0.41 ms (Simulated --demo)".to_string()
+    } else if !snap.sessions.is_empty() {
+        format!("{:.2} ms", snap.sessions[0].rtt_ms)
     } else {
-        "Collecting...".to_string()
+        "N/A".to_string()
     };
 
     if json {
-        println!(
-            "{}",
-            serde_json::json!({
-                "status": if is_active { "active" } else { "idle" },
-                "active_sessions": active_sessions,
-                "packets_sec": packets_sec,
-                "avg_rtt": avg_rtt,
-                "replay_drops": snap.replay_attempts_blocked
-            })
-        );
+        let mut obj = serde_json::json!({
+            "status": if is_active { "active" } else { "idle" },
+            "active_sessions": active_sessions,
+            "packets_sec": packets_sec,
+            "avg_rtt": avg_rtt,
+            "replay_drops": snap.replay_attempts_blocked
+        });
+        if demo {
+            obj["simulated"] = serde_json::Value::Bool(true);
+        }
+        println!("{}", obj);
         return;
     }
 
@@ -52,43 +53,42 @@ pub fn run_monitor(demo: bool, json: bool) {
     );
     println!("  {}", "─────────────────────────────────────────────────────────────────────────────────────────────".dimmed());
 
-    if is_active {
-        let uuid = if !snap.sessions.is_empty() {
-            &snap.sessions[0].uuid
-        } else {
-            "d8193ad7-4e01-4c12-91a2-11bc90a8231e"
-        };
-        let cipher = if !snap.sessions.is_empty() {
-            &snap.sessions[0].cipher
-        } else {
-            "AES-256-GCM"
-        };
-        let tput = if demo { "614.2 MB/s" } else { "412.0 MB/s" };
-        let rtt = if demo { "0.41 ms" } else { "0.38 ms" };
+    if demo {
+        println!("  {}", "[SIMULATED --DEMO SESSIONS — NOT LIVE TRAFFIC]".yellow().bold());
         println!(
             "  {:<12} {:<36} {:<15} {:<16} {:<14}",
             "Just now".green(),
-            uuid.yellow(),
-            cipher.cyan(),
-            tput.yellow().bold(),
-            rtt.green().bold()
+            "d8193ad7-4e01-4c12-91a2-11bc90a8231e [SIM]".yellow(),
+            "AES-256-GCM".cyan(),
+            "614.2 MB/s".yellow().bold(),
+            "0.41 ms".green().bold()
         );
-        if demo {
+        println!(
+            "  {:<12} {:<36} {:<15} {:<16} {:<14}",
+            "2s ago".dimmed(),
+            "f49281a0-99c2-4211-881b-a49201bc981a [SIM]".white(),
+            "AES-256-GCM".cyan(),
+            "118.5 MB/s".yellow(),
+            "0.44 ms".green()
+        );
+        println!(
+            "  {:<12} {:<36} {:<15} {:<16} {:<14}",
+            "5s ago".dimmed(),
+            "1109a823-11bc-4e01-91a2-d8193ad74c12 [SIM]".white(),
+            "ChaCha20".cyan(),
+            "84.1 MB/s".yellow(),
+            "0.41 ms".green()
+        );
+    } else if has_traffic && !snap.sessions.is_empty() {
+        for s in &snap.sessions {
+            let tput = format!("{}/s", ui::format_bytes(s.bytes_transferred / snap.uptime_secs.max(1)));
             println!(
                 "  {:<12} {:<36} {:<15} {:<16} {:<14}",
-                "2s ago".dimmed(),
-                "f49281a0-99c2-4211-881b-a49201bc981a".white(),
-                "AES-256-GCM".cyan(),
-                "118.5 MB/s".yellow(),
-                "0.44 ms".green()
-            );
-            println!(
-                "  {:<12} {:<36} {:<15} {:<16} {:<14}",
-                "5s ago".dimmed(),
-                "1109a823-11bc-4e01-91a2-d8193ad74c12".white(),
-                "ChaCha20".cyan(),
-                "84.1 MB/s".yellow(),
-                "0.41 ms".green()
+                "Active".green(),
+                s.uuid.yellow(),
+                s.cipher.cyan(),
+                tput.yellow().bold(),
+                format!("{:.2} ms", s.rtt_ms).green().bold()
             );
         }
     } else {
@@ -100,9 +100,9 @@ pub fn run_monitor(demo: bool, json: bool) {
             "  {:<12} {:<36} {:<15} {:<16} {:<14}",
             "IDLE".dimmed(),
             "None".dimmed(),
-            "AES-256-GCM".dimmed(),
-            "Collecting...".yellow(),
-            "Collecting...".green()
+            "N/A".dimmed(),
+            "0 B/s".yellow(),
+            "N/A".green()
         );
     }
     thread::sleep(Duration::from_millis(500));
@@ -111,120 +111,85 @@ pub fn run_monitor(demo: bool, json: bool) {
 
 pub fn run_stats(demo: bool, json: bool) {
     let snap = TelemetrySnapshot::fetch_current();
-    let is_active =
-        demo || snap.active_sessions > 0 || snap.total_packets > 0 || snap.status == "running";
+    let has_traffic = snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
+    let is_active = demo || has_traffic || snap.status == "running";
 
     if json {
-        println!(
-            "{}",
-            serde_json::json!({
-                "uptime_secs": if is_active { 142 } else { 0 },
-                "total_bytes_sent": if demo { 142000000 } else { snap.total_bytes_sent },
-                "total_bytes_recv": if demo { 38000000 } else { snap.total_bytes_recv },
-                "total_packets": if demo { 14209 } else { snap.total_packets },
-                "replay_attempts_blocked": snap.replay_attempts_blocked,
-                "active_sessions": if demo { 14 } else { snap.active_sessions },
-                "active_streams": if demo { 56 } else { snap.active_streams },
-                "crypto_engine": "AES-256-GCM + Ed25519"
-            })
-        );
+        let mut obj = serde_json::json!({
+            "uptime_secs": if demo { 142 } else { snap.uptime_secs },
+            "total_bytes_sent": if demo { 142000000 } else { snap.total_bytes_sent },
+            "total_bytes_recv": if demo { 38000000 } else { snap.total_bytes_recv },
+            "total_packets": if demo { 14209 } else { snap.total_packets },
+            "replay_attempts_blocked": snap.replay_attempts_blocked,
+            "active_sessions": if demo { 14 } else { snap.active_sessions },
+            "active_streams": if demo { 56 } else { snap.active_streams },
+            "crypto_engine": "AES-256-GCM + Ed25519"
+        });
+        if demo {
+            obj["simulated"] = serde_json::Value::Bool(true);
+        }
+        println!("{}", obj);
         return;
     }
 
     ui::header("KSP System & Protocol Telemetry Statistics");
     let mut t = ui::table(&["Metric", "Value", "Notes"]);
-    if is_active {
-        let sessions = if demo { 14 } else { snap.active_sessions };
-        let streams = if demo { 56 } else { snap.active_streams };
-        let pkts = if demo { 14209 } else { snap.total_packets };
-        let bytes_str = if demo {
-            "1.8 GB (1.4 GB Sent / 380 MB Recv)".to_string()
-        } else {
-            format!(
-                "{} total",
-                ui::format_bytes(snap.total_bytes_sent + snap.total_bytes_recv)
-            )
-        };
-        t.add_row(vec![
-            "Server Uptime",
-            if demo {
-                "2m 22s"
-            } else {
-                "Running (Active Daemon)"
-            },
-            "ksp server daemon active ✔",
-        ]);
-        t.add_row(vec![
-            "Active Sessions / Streams",
-            &format!("{} sessions / {} streams", sessions, streams),
-            "Client multiplexers established",
-        ]);
-        t.add_row(vec![
-            "Total Bandwidth Processed",
-            &bytes_str,
-            "High-throughput AEAD pipeline",
-        ]);
-        t.add_row(vec![
-            "Total Packets Transferred",
-            &format!("{} packets", pkts),
-            "Zero packet loss",
-        ]);
-        t.add_row(vec![
-            "Replay Attempts Blocked",
-            &format!("{} packets", snap.replay_attempts_blocked),
-            "1024-bit window ready",
-        ]);
-        t.add_row(vec![
-            "AEAD Auth Tag Failures",
-            "0 drops",
-            "No tampering detected",
-        ]);
-        t.add_row(vec![
-            "Average RTT Latency",
-            if demo {
-                "0.41 ms (Measured)"
-            } else {
-                "0.38 ms (Measured)"
-            },
-            "Sub-millisecond loopback/LAN",
-        ]);
+    let sessions = if demo { 14 } else { snap.active_sessions };
+    let streams = if demo { 56 } else { snap.active_streams };
+    let pkts = if demo { 14209 } else { snap.total_packets };
+    let bytes_str = if demo {
+        "1.8 GB (1.4 GB Sent / 380 MB Recv)".to_string()
     } else {
-        t.add_row(vec![
-            "Server Uptime",
-            "Collecting...",
-            "Start with `ksp server start`",
-        ]);
-        t.add_row(vec![
-            "Active Sessions / Streams",
-            "0 sessions / 0 streams",
-            "No active client connections",
-        ]);
-        t.add_row(vec![
-            "Total Bandwidth Processed",
-            "0 B (0 B Sent / 0 B Recv)",
-            "Waiting for traffic",
-        ]);
-        t.add_row(vec![
-            "Total Packets Transferred",
-            "0 packets",
-            "Collecting baseline...",
-        ]);
-        t.add_row(vec![
-            "Replay Attempts Blocked",
-            "0 packets",
-            "1024-bit window ready",
-        ]);
-        t.add_row(vec![
-            "AEAD Auth Tag Failures",
-            "0 drops",
-            "No tampering detected",
-        ]);
-        t.add_row(vec![
-            "Average RTT Latency",
-            "N/A (Collecting...)",
-            "Connect to measure RTT",
-        ]);
-    }
+        format!(
+            "{} total ({} Sent / {} Recv)",
+            ui::format_bytes(snap.total_bytes_sent + snap.total_bytes_recv),
+            ui::format_bytes(snap.total_bytes_sent),
+            ui::format_bytes(snap.total_bytes_recv)
+        )
+    };
+
+    t.add_row(vec![
+        "Server Status",
+        if demo {
+            "Simulated (Demo)"
+        } else {
+            &snap.status
+        },
+        if is_active { "ksp server daemon active ✔" } else { "Offline / Idle" },
+    ]);
+    t.add_row(vec![
+        "Active Sessions / Streams",
+        &format!("{} sessions / {} streams", sessions, streams),
+        if sessions > 0 || demo { "Client multiplexers established" } else { "No active connections" },
+    ]);
+    t.add_row(vec![
+        "Total Bandwidth Processed",
+        &bytes_str,
+        "AES-256-GCM / ChaCha20Poly1305 AEAD",
+    ]);
+    t.add_row(vec![
+        "Total Packets Transferred",
+        &format!("{} packets", pkts),
+        "Authenticated sequence frames",
+    ]);
+    t.add_row(vec![
+        "Replay Attempts Blocked",
+        &format!("{} packets", snap.replay_attempts_blocked),
+        "1024-bit replay window active",
+    ]);
+    t.add_row(vec![
+        "Average RTT Latency",
+        if demo {
+            "0.41 ms (Simulated --demo)"
+        } else if !snap.sessions.is_empty() {
+            let avg = snap.sessions.iter().map(|s| s.rtt_ms).sum::<f64>() / (snap.sessions.len() as f64);
+            let s_fmt = format!("{:.2} ms (Snapshot Avg)", avg);
+            Box::leak(s_fmt.into_boxed_str())
+        } else {
+            "N/A (Collecting...)"
+        },
+        if sessions > 0 || demo { "Live connection metrics" } else { "Connect to measure RTT" },
+    ]);
     println!("{t}");
     println!();
 }
@@ -236,8 +201,8 @@ pub fn run_dashboard(demo: bool, json: bool) {
     }
 
     let snap = TelemetrySnapshot::fetch_current();
-    let is_active =
-        demo || snap.active_sessions > 0 || snap.total_packets > 0 || snap.status == "running";
+    let has_traffic = snap.active_sessions > 0 || !snap.sessions.is_empty() || snap.total_packets > 0;
+    let is_active = demo || has_traffic;
 
     println!();
     println!("  {}", "╔═══════════════════════════════════════════════════════════════════════════════════════════════╗".cyan());
@@ -247,21 +212,28 @@ pub fn run_dashboard(demo: bool, json: bool) {
     if is_active {
         let sessions = if demo { 14 } else { snap.active_sessions };
         let streams = if demo { 56 } else { snap.active_streams };
-        let tput = if demo { "614.2 MB/s" } else { "412.0 MB/s" };
+        let total_bytes = snap.total_bytes_sent + snap.total_bytes_recv;
+        let tput = if demo { "614.2 MB/s (Simulated --demo)".to_string() } else { format!("{}/s", ui::format_bytes(total_bytes / snap.uptime_secs.max(1))) };
         let rtt = if demo {
-            "0.41 ms (p99: 0.82 ms)"
+            "0.41 ms (p99: 0.82 ms) (Simulated --demo)".to_string()
+        } else if !snap.sessions.is_empty() {
+            format!("{:.2} ms", snap.sessions[0].rtt_ms)
         } else {
-            "0.38 ms (p99: 0.75 ms)"
+            "N/A".to_string()
         };
-        let s1_uuid = if !snap.sessions.is_empty() {
-            &snap.sessions[0].uuid
+        let _s1_uuid = if !snap.sessions.is_empty() {
+            snap.sessions[0].uuid.clone()
+        } else if demo {
+            "d8193ad7-4e01-4c12-91a2-11bc90a8231e [SIM]".to_string()
         } else {
-            "d8193ad7-4e01-4c12-91a2-11bc90a8231e"
+            "N/A".to_string()
         };
-        let s1_ciph = if !snap.sessions.is_empty() {
-            &snap.sessions[0].cipher
+        let _s1_ciph = if !snap.sessions.is_empty() {
+            snap.sessions[0].cipher.clone()
+        } else if demo {
+            "AES-256-GCM".to_string()
         } else {
-            "AES-256-GCM"
+            "N/A".to_string()
         };
 
         println!(
@@ -287,7 +259,7 @@ pub fn run_dashboard(demo: bool, json: bool) {
             "║".cyan(),
             format!("   Active Streams:   {} channels", streams).white(),
             "║".cyan(),
-            "   Window Lower Bound: Seq #14080".dimmed(),
+            format!("   Window Lower Bound: Seq #{}", snap.total_packets.saturating_sub(1024)).dimmed(),
             "║".cyan()
         );
         println!(
@@ -295,7 +267,7 @@ pub fn run_dashboard(demo: bool, json: bool) {
             "║".cyan(),
             format!("   Throughput:       {}", tput).yellow().bold(),
             "║".cyan(),
-            "   Highest Seq Seen:   Seq #15104".yellow(),
+            format!("   Highest Seq Seen:   Seq #{}", snap.total_packets).yellow(),
             "║".cyan()
         );
         println!(
@@ -312,37 +284,34 @@ pub fn run_dashboard(demo: bool, json: bool) {
             "║".cyan()
         );
         println!("  {}", "╠═════════════════════════════════════════════╩═════════════════════════════════════════════════╣".cyan());
-        println!("  {} {:<93} {}", "║".cyan(), " ACTIVE SESSION POOL & STREAM MULTIPLEXER STATUS                                               ".yellow().bold(), "║".cyan());
-        println!(
-            "  {} {:<93} {}",
-            "║".cyan(),
-            format!(
-                "   ✔ {} | {} | 18 Streams | 412 MB | 0.38 ms     ",
-                s1_uuid, s1_ciph
-            )
-            .white(),
-            "║".cyan()
-        );
         if demo {
-            println!("  {} {:<93} {}", "║".cyan(), "   ✔ f49281a0-99c2-4211-881b-a49201bc981a | AES-256-GCM | 12 Streams | 118 MB | 0.44 ms     ".white(), "║".cyan());
-            println!("  {} {:<93} {}", "║".cyan(), "   ✔ 1109a823-11bc-4e01-91a2-d8193ad74c12 | ChaCha20    | 26 Streams | 84 MB  | 0.41 ms     ".white(), "║".cyan());
+            println!("  {} {:<93} {}", "║".cyan(), " SIMULATED SESSION POOL & STREAM MULTIPLEXER STATUS (--DEMO)                                   ".yellow().bold(), "║".cyan());
+            println!("  {} {:<93} {}", "║".cyan(), "   ✔ d8193ad7-4e01-4c12-91a2-11bc90a8231e [SIM] | AES-256-GCM | 18 Streams | 412 MB | 0.38 ms ".white(), "║".cyan());
+            println!("  {} {:<93} {}", "║".cyan(), "   ✔ f49281a0-99c2-4211-881b-a49201bc981a [SIM] | AES-256-GCM | 12 Streams | 118 MB | 0.44 ms ".white(), "║".cyan());
+            println!("  {} {:<93} {}", "║".cyan(), "   ✔ 1109a823-11bc-4e01-91a2-d8193ad74c12 [SIM] | ChaCha20    | 26 Streams | 84 MB  | 0.41 ms ".white(), "║".cyan());
         } else {
-            println!("  {} {:<93} {}", "║".cyan(), "                                                                                               ".dimmed(), "║".cyan());
+            println!("  {} {:<93} {}", "║".cyan(), " ACTIVE SESSION POOL & STREAM MULTIPLEXER STATUS                                               ".yellow().bold(), "║".cyan());
+            for s in &snap.sessions {
+                let info = format!("   ✔ {} | {:<11} | {:>2} Streams | {:>6} | {:.2} ms", s.uuid, s.cipher, s.streams, ui::format_bytes(s.bytes_transferred), s.rtt_ms);
+                println!("  {} {:<93} {}", "║".cyan(), info.white(), "║".cyan());
+            }
         }
         println!("  {}", "╠═══════════════════════════════════════════════════════════════════════════════════════════════╣".cyan());
         println!("  {} {:<93} {}", "║".cyan(), " REAL-TIME THROUGHPUT SPARKLINE (Last 10 Seconds)                                              ".green().bold(), "║".cyan());
+        let spark_tput = if demo { "412 MB/s (Simulated --demo)" } else { &tput };
+        let spark_pkts = if demo { "Peak: 14,209 pkts/s | Current: 13,850 pkts/s (Simulated --demo)" } else { &format!("Current: {} pkts/s", snap.total_packets / snap.uptime_secs.max(1)) };
         println!(
             "  {} {:<93} {}",
             "║".cyan(),
             format!(
-                "   Throughput:  ▄▅▆▇████▇▆▅▄▃▂  [Current: {} | Avg: {}]",
-                tput, tput
+                "   Throughput:  ▄▅▆▇████▇▆▅▄▃▂  [{}]",
+                spark_tput
             )
             .yellow()
             .bold(),
             "║".cyan()
         );
-        println!("  {} {:<93} {}", "║".cyan(), "   Packet Rate: ▃▄▅▆▇███▇▆▅▄▃▂  [Peak: 14,209 pkts/s | Current: 13,850 pkts/s]                ".yellow(), "║".cyan());
+        println!("  {} {:<93} {}", "║".cyan(), format!("   Packet Rate: ▃▄▅▆▇███▇▆▅▄▃▂  [{}]", spark_pkts).yellow(), "║".cyan());
         println!("  {}", "╚═══════════════════════════════════════════════════════════════════════════════════════════════╝".cyan());
         println!();
     } else {
@@ -375,7 +344,7 @@ pub fn run_dashboard(demo: bool, json: bool) {
         println!(
             "  {} {:<43} {} {:<47} {}",
             "║".cyan(),
-            "   Throughput:       N/A (Collecting...)".yellow().bold(),
+            "   Throughput:       0 B/s".yellow().bold(),
             "║".cyan(),
             "   Highest Seq Seen:   Seq #0".yellow(),
             "║".cyan()
@@ -383,7 +352,7 @@ pub fn run_dashboard(demo: bool, json: bool) {
         println!(
             "  {} {:<43} {} {:<47} {}",
             "║".cyan(),
-            "   Average Latency:  N/A (Collecting...)".yellow(),
+            "   Average Latency:  N/A".yellow(),
             "║".cyan(),
             "   Replays Rejected:   0 Packets Blocked 🛡".green().bold(),
             "║".cyan()

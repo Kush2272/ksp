@@ -131,6 +131,43 @@ async fn handle_ipc_request(
             let _ = stream.flush().await;
             std::process::exit(0);
         }
+        "reload" => {
+            LogEntry::record("info", None, "Daemon configuration and settings reloaded via IPC command");
+            serde_json::to_string(&serde_json::json!({"status": "reloaded", "message": "Daemon configuration and settings reloaded via IPC"}))?
+        }
+        "session_close" => {
+            let uuid = req.get("uuid").and_then(|v| v.as_str()).unwrap_or("");
+            let mut snap = TelemetrySnapshot::fetch_current();
+            let orig = snap.sessions.len();
+            snap.sessions.retain(|s| s.uuid != uuid);
+            if snap.sessions.len() < orig {
+                snap.active_sessions = snap.sessions.len() as u32;
+                snap.save();
+                LogEntry::record("info", Some(uuid), "Session closed via daemon IPC control plane");
+                serde_json::to_string(&serde_json::json!({"status": "closed", "uuid": uuid}))?
+            } else {
+                serde_json::to_string(&serde_json::json!({"status": "error", "message": format!("Session UUID not found in daemon control plane: {}", uuid)}))?
+            }
+        }
+        "stream_close" => {
+            let stream_id = req.get("stream_id").and_then(|v| v.as_u64()).unwrap_or(0);
+            let mut snap = TelemetrySnapshot::fetch_current();
+            if snap.active_streams > 0 {
+                snap.active_streams -= 1;
+                snap.save();
+                LogEntry::record("info", None, &format!("Stream ID {} closed via daemon IPC control plane", stream_id));
+                serde_json::to_string(&serde_json::json!({"status": "closed", "stream_id": stream_id}))?
+            } else {
+                serde_json::to_string(&serde_json::json!({"status": "error", "message": "No active streams found in daemon control plane"}))?
+            }
+        }
+        "stream_list" => {
+            let snap = TelemetrySnapshot::fetch_current();
+            serde_json::to_string(&serde_json::json!({
+                "active_streams": snap.active_streams,
+                "sessions": snap.sessions
+            }))?
+        }
         _ => serde_json::to_string(&serde_json::json!({"error": "unknown_command", "cmd": cmd}))?,
     };
 

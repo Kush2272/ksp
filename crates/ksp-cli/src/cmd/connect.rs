@@ -148,11 +148,29 @@ async fn connect_async(addr: SocketAddr, json: bool) {
 
 /// Disconnect the active KSP session or connection.
 pub fn run_disconnect(json: bool) {
-    if json {
-        ui::json_output(
-            &serde_json::json!({"status": "disconnected", "message": "Active session closed"}),
-        );
+    let mut snap = crate::cmd::telemetry::TelemetrySnapshot::fetch_current();
+    if snap.active_sessions > 0 || !snap.sessions.is_empty() {
+        let count = snap.sessions.len().max(snap.active_sessions as usize);
+        snap.sessions.clear();
+        snap.active_sessions = 0;
+        snap.active_streams = 0;
+        snap.save();
+        if json {
+            ui::json_output(
+                &serde_json::json!({"status": "disconnected", "local_tracked_sessions_cleared": count, "message": "Local tracked session state cleared"}),
+            );
+        } else {
+            ui::success(&format!("Cleared {} local tracked KSP session snapshot(s).", count));
+        }
     } else {
-        ui::success("Disconnected active KSP session gracefully.");
+        if json {
+            ui::json_output(
+                &serde_json::json!({"status": "error", "message": "No active KSP session found to disconnect"}),
+            );
+        } else {
+            ui::failure("No active KSP session found to disconnect.");
+            ui::info("You can connect to a KSP server using: ksp connect <host:port>");
+        }
+        std::process::exit(1);
     }
 }

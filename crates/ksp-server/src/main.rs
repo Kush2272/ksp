@@ -22,6 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         signing_key,
         gateway_target: None,
         output_sink: None,
+        auth_config: ksp_server::AuthConfig::from_env(),
     };
 
     info!("Starting KSP server on port {}", DEFAULT_PORT);

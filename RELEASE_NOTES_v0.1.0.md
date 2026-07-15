@@ -1,14 +1,14 @@
-# 🚀 KSP CLI v0.1.0 — Initial Production Release
+# 🚀 KSP CLI v0.1.0 — Initial Release
 
-We are excited to announce the initial production release of **KSP CLI (`v0.1.0`)** and the Kush Secure Protocol (`RFC-0001-ksp-v1`) ecosystem!
+We are excited to announce the initial release of **KSP CLI (`v0.1.0`)** and the Kush Secure Protocol (`RFC-0001-ksp-v1`) ecosystem!
 
 ---
 
 ## ✨ Highlights
 
-* **50+ Production-Grade Commands**: Complete end-to-end diagnostic, testing, capture, and benchmarking capability directly inside your terminal.
+* **35+ Commands & Utilities**: Comprehensive end-to-end diagnostic, testing, capture, and benchmarking capability directly inside your terminal.
 * **Cryptographically Hardened Protocol Core**: Full binary framing specification using X25519 Diffie-Hellman key exchange, HKDF-SHA256, and ChaCha20-Poly1305 / AES-256-GCM AEAD encryption.
-* **Resumable Encrypted File Transfer**: High-speed chunked transmission (`ksp transfer send` / `receive`) over multiplexed streams with real-time SHA256 verification.
+* **Resumable Encrypted File Transfer**: High-speed chunked transmission (`ksp transfer send` / `receive`) over multiplexed streams with post-transfer SHA-256 verification.
 * **Packet Capture & Wireshark Dissector**: Capture live binary frames (`ksp capture`) and export our native Lua plugin (`ksp wireshark`) for Wireshark inspection.
 * **Real-Time Visual Curses Dashboard**: Monitor ingress/egress bandwidth, latency histograms, and session pools live (`ksp dashboard`).
 * **Universal One-Liner Installers**: Zero-dependency cross-platform installers hosted directly on our CDN (`kspprotocol.dev`).

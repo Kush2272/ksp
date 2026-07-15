@@ -117,7 +117,7 @@ pub fn run_send(file: &str, address: &str, json: bool) {
             "size": file_size,
             "sha256": sha256_hex
         });
-        if let Err(e) = client.send_packet(PacketType::Data, 4, header_json.to_string().as_bytes()).await {
+        if let Err(e) = client.send_packet(PacketType::Data, 1, header_json.to_string().as_bytes()).await {
             if !json { ui::failure(&format!("Failed to send file header: {}", e)); }
             return;
         }
@@ -130,7 +130,7 @@ pub fn run_send(file: &str, address: &str, json: bool) {
 
         while let Ok(n) = f.read(&mut chunk_buf) {
             if n == 0 { break; }
-            if let Err(e) = client.send_packet(PacketType::Data, 4, &chunk_buf[..n]).await {
+            if let Err(e) = client.send_packet(PacketType::Data, 2, &chunk_buf[..n]).await {
                 if let Some(ref p) = pb { p.finish_and_clear(); }
                 if !json { ui::failure(&format!("Error sending chunk at offset {}: {}", total_sent, e)); }
                 return;
@@ -141,7 +141,7 @@ pub fn run_send(file: &str, address: &str, json: bool) {
 
         // Step 4: Send FILE_EOF
         let eof_json = serde_json::json!({"op": "FILE_EOF", "sha256": sha256_hex});
-        let _ = client.send_packet(PacketType::Data, 4, eof_json.to_string().as_bytes()).await;
+        let _ = client.send_packet(PacketType::Data, 1, eof_json.to_string().as_bytes()).await;
 
         if let Some(ref p) = pb { p.finish_with_message("Chunks Delivered"); }
 
@@ -150,13 +150,9 @@ pub fn run_send(file: &str, address: &str, json: bool) {
         if let Ok((_pkt, payload)) = tokio::time::timeout(std::time::Duration::from_secs(5), client.receive_packet()).await.unwrap_or(Err(ksp_core::error::KspError::ConnectionClosed)) {
             if let Ok(ack_val) = serde_json::from_slice::<serde_json::Value>(&payload) {
                 if ack_val.get("op").and_then(|v| v.as_str()) == Some("FILE_ACK") {
-                    verified_remote = true;
+                    verified_remote = ack_val.get("verified").and_then(|v| v.as_bool()).unwrap_or(false);
                 }
-            } else if payload == eof_json.to_string().as_bytes() || !payload.is_empty() {
-                verified_remote = true;
             }
-        } else {
-            verified_remote = true;
         }
 
         let elapsed = start_time.elapsed().as_secs_f64();
@@ -167,7 +163,7 @@ pub fn run_send(file: &str, address: &str, json: bool) {
 
         if json {
             ui::json_output(&serde_json::json!({
-                "status": "ok",
+                "status": if verified_remote { "ok" } else { "unverified" },
                 "file": filename,
                 "size": file_size,
                 "sha256": sha256_hex,
@@ -178,9 +174,9 @@ pub fn run_send(file: &str, address: &str, json: bool) {
         } else {
             println!();
             if verified_remote {
-                ui::summary_ok(&format!("Transfer complete: {} delivered in {:.2}s ({:.2} MB/s | SHA-256 Verified ✔)", ui::format_bytes(file_size), elapsed, speed_mbs));
+                ui::summary_ok(&format!("Transfer complete: {} delivered in {:.2}s ({:.2} MB/s | SHA-256 Verified by receiver ✔)", ui::format_bytes(file_size), elapsed, speed_mbs));
             } else {
-                ui::summary_ok(&format!("Transfer finished: {} sent in {:.2}s ({:.2} MB/s)", ui::format_bytes(file_size), elapsed, speed_mbs));
+                ui::summary_ok(&format!("Transfer finished: {} sent in {:.2}s ({:.2} MB/s | SHA-256 verification not confirmed by receiver)", ui::format_bytes(file_size), elapsed, speed_mbs));
             }
         }
     });
@@ -255,7 +251,7 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
             "filename": filename,
             "sha256": sha256_hex
         });
-        let _ = client.send_packet(PacketType::Data, 4, check_json.to_string().as_bytes()).await;
+        let _ = client.send_packet(PacketType::Data, 1, check_json.to_string().as_bytes()).await;
 
         let mut resumed_offset = 0u64;
         if let Ok((_pkt, payload)) = tokio::time::timeout(std::time::Duration::from_secs(3), client.receive_packet()).await.unwrap_or(Err(ksp_core::error::KspError::ConnectionClosed))
@@ -263,10 +259,6 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
                 && let Some(offset) = resp.get("offset").and_then(|v| v.as_u64()) {
                     resumed_offset = offset.min(file_size);
                 }
-
-        if resumed_offset == 0 && file_size > 65536 {
-            resumed_offset = file_size / 2;
-        }
 
         let _ = f.seek(SeekFrom::Start(resumed_offset));
 
@@ -277,7 +269,11 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
             ui::kv("Total Size", &ui::format_bytes(file_size));
             ui::kv("SHA-256 Digest", &sha256_hex.yellow().to_string());
             println!();
-            println!("  {} Resuming chunk stream from verified byte offset {}...", "🔄".yellow(), ui::format_bytes(resumed_offset));
+            if resumed_offset > 0 {
+                println!("  {} Resuming chunk stream from receiver-confirmed byte offset {}...", "🔄".yellow(), ui::format_bytes(resumed_offset));
+            } else {
+                println!("  {} Starting chunk stream from byte offset 0 (no remote checkpoint offset found)...", "🔄".yellow());
+            }
             println!();
         }
 
@@ -290,7 +286,7 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
 
         while let Ok(n) = f.read(&mut chunk_buf) {
             if n == 0 { break; }
-            if let Err(e) = client.send_packet(PacketType::Data, 4, &chunk_buf[..n]).await {
+            if let Err(e) = client.send_packet(PacketType::Data, 2, &chunk_buf[..n]).await {
                 if let Some(ref p) = pb { p.finish_and_clear(); }
                 if !json { ui::failure(&format!("Error sending chunk at offset {}: {}", total_sent, e)); }
                 return;
@@ -300,26 +296,40 @@ pub fn run_resume(file: &str, address: &str, json: bool) {
         }
 
         let eof_json = serde_json::json!({"op": "FILE_EOF", "sha256": sha256_hex});
-        let _ = client.send_packet(PacketType::Data, 4, eof_json.to_string().as_bytes()).await;
+        let _ = client.send_packet(PacketType::Data, 1, eof_json.to_string().as_bytes()).await;
 
         if let Some(ref p) = pb { p.finish_with_message("Resumed Chunks Delivered"); }
+
+        let mut verified_remote = false;
+        if let Ok((_pkt, payload)) = tokio::time::timeout(std::time::Duration::from_secs(5), client.receive_packet()).await.unwrap_or(Err(ksp_core::error::KspError::ConnectionClosed)) {
+            if let Ok(ack_val) = serde_json::from_slice::<serde_json::Value>(&payload) {
+                if ack_val.get("op").and_then(|v| v.as_str()) == Some("FILE_ACK") {
+                    verified_remote = ack_val.get("verified").and_then(|v| v.as_bool()).unwrap_or(false);
+                }
+            }
+        }
 
         let elapsed = start_time.elapsed().as_secs_f64();
         let speed_mbs = if elapsed > 0.001 { ((file_size - resumed_offset) as f64 / 1_048_576.0) / elapsed } else { 0.0 };
 
         if json {
             ui::json_output(&serde_json::json!({
-                "status": "ok",
-                "resumed": true,
+                "status": if verified_remote { "ok" } else { "unverified" },
+                "resumed": resumed_offset > 0,
                 "resumed_from": resumed_offset,
                 "total_size": file_size,
                 "sha256": sha256_hex,
                 "elapsed_sec": elapsed,
-                "speed_mbps": speed_mbs
+                "speed_mbps": speed_mbs,
+                "verified": verified_remote
             }));
         } else {
             println!();
-            ui::summary_ok(&format!("Resumed transfer finished: {} total delivered (resumed {} from offset {}) at {:.2} MB/s ✔", ui::format_bytes(file_size), ui::format_bytes(file_size - resumed_offset), ui::format_bytes(resumed_offset), speed_mbs));
+            if verified_remote {
+                ui::summary_ok(&format!("Resumed transfer complete: {} delivered (resumed {} from offset {}) at {:.2} MB/s | SHA-256 Verified by receiver ✔", ui::format_bytes(file_size), ui::format_bytes(file_size - resumed_offset), ui::format_bytes(resumed_offset), speed_mbs));
+            } else {
+                ui::summary_ok(&format!("Resumed transfer finished: {} delivered (resumed {} from offset {}) at {:.2} MB/s | SHA-256 verification not confirmed by receiver", ui::format_bytes(file_size), ui::format_bytes(file_size - resumed_offset), ui::format_bytes(resumed_offset), speed_mbs));
+            }
         }
     });
 }
@@ -368,6 +378,7 @@ pub fn run_receive(port: u16, output: Option<&str>, json: bool) {
             capabilities: ksp_core::capability::default_capabilities(),
             gateway_target: None,
             output_sink: output.map(std::path::PathBuf::from),
+            auth_config: ksp_server::AuthConfig::from_env(),
         };
 
         let _ = run_server(config).await;

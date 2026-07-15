@@ -11,7 +11,7 @@ Security updates are actively backported to the following releases:
 | Version | Supported | Release Category |
 | :--- | :--- | :--- |
 | **v0.1.x** | ✅ | Current Stable Release (`v0.1.0`) |
-| **v1.0.0-rc** | ✅ | Upcoming Release Candidate |
+| **v1.0.0-rc** | ⏳ | Planned Upcoming Release Candidate |
 | **< v0.1.0** | ❌ | Alpha / Pre-release |
 
 ---

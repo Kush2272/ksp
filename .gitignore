@@ -18,3 +18,9 @@ Thumbs.db
 *.key
 *.cert
 certs/
+
+# KSP standalone release packages and test artifacts
+ksp-v*.exe
+ksp-v*.tar.gz
+sample_packet.bin
+checksums.txt
