@@ -38,14 +38,14 @@ tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["codec"] }
 
 # Cryptography
-x25519-dalek = { version = "2", features = ["static_secrets"] }
-ed25519-dalek = { version = "2", features = ["rand_core"] }
-aes-gcm = "0.10"
-chacha20poly1305 = "0.10"
-hkdf = "0.12"
-sha2 = "0.10"
-hmac = "0.12"
-rand = "0.8"
+x25519-dalek = { version = "3", features = ["static_secrets"] }
+ed25519-dalek = { version = "3", features = ["rand_core"] }
+aes-gcm = "0.11"
+chacha20poly1305 = "0.11"
+hkdf = "0.13"
+sha2 = "0.11"
+hmac = "0.13"
+rand = "0.10"
 zeroize = { version = "1", features = ["derive"] }
 
 # Compression
@@ -60,22 +60,22 @@ clap = { version = "4", features = ["derive"] }
 clap_complete = "4"
 
 # CLI UI libraries
-colored = "2"
+colored = "3"
 comfy-table = "7"
-indicatif = "0.17"
-dialoguer = "0.11"
-console = "0.15"
+indicatif = "0.18"
+dialoguer = "0.12"
+console = "0.16"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "0.8"
+toml = "1.1"
 
 # Utilities
 hex = "0.4"
 chrono = "0.4"
 open = "5"
-sysinfo = "0.33"
+sysinfo = "0.39"
 ctrlc = "3"
 
 # Internal crates
